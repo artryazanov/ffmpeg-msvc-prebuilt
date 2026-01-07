@@ -106,12 +106,12 @@ if [ -n "$ENABLE_LIBVPX" ]; then
     apply-patch libvpx libvpx.patch
     if [[ "$BUILD_ARCH" == "arm" || "$BUILD_ARCH" == "arm64" ]]; then
         VPX_AS_FLAGS="--as=auto"
-        VPX_AS_ENV=""
+        VPX_AS_VAL=""
     else
         VPX_AS_FLAGS="--as=yasm"
-        VPX_AS_ENV="AS=yasm"
+        VPX_AS_VAL="yasm"
     fi
-    CFLAGS="" $VPX_AS_ENV AR=lib ARFLAGS= CC=cl CXX=cl LD=link STRIP=false target= ./build-make-dep.sh libvpx --target=$libvpx_target $VPX_AS_FLAGS --disable-optimizations --disable-dependency-tracking --disable-runtime-cpu-detect --disable-thumb --disable-neon --enable-external-build --disable-unit-tests --disable-decode-perf-tests --disable-encode-perf-tests --disable-tools --disable-examples $LIBVPX_ARGS
+    env CFLAGS="" AS="$VPX_AS_VAL" AR=lib ARFLAGS= CC=cl CXX=cl LD=link STRIP=false target= ./build-make-dep.sh libvpx --target=$libvpx_target $VPX_AS_FLAGS --disable-optimizations --disable-dependency-tracking --disable-runtime-cpu-detect --disable-thumb --disable-neon --enable-external-build --disable-unit-tests --disable-decode-perf-tests --disable-encode-perf-tests --disable-tools --disable-examples $LIBVPX_ARGS
     add_ffargs "--enable-libvpx"
 fi
 
