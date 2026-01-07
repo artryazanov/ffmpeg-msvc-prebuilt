@@ -1,0 +1,25 @@
+diff --git a/source/cmake/Version.cmake b/source/cmake/Version.cmake
+index 7592750..5617342 100644
+--- a/source/cmake/Version.cmake
++++ b/source/cmake/Version.cmake
+@@ -26,7 +26,11 @@
+ #################################################################################################################
+ #Default Settings, for user to be vigilant about x265 version being reported during product build.
+ set(X265_VERSION "unknown")
+-set(X265_LATEST_TAG "0.0")
++if(DEFINED X265_LATEST_TAG)
++    set(X265_SKIP_DETECT TRUE)
++else()
++    set(X265_LATEST_TAG "0.0")
++endif()
+ set(X265_TAG_DISTANCE "0")
+ 
+ #Find version control software to be used for live and extracted repositories from compressed tarballs
+@@ -141,7 +145,7 @@
+     endif()
+     message(STATUS "GIT ARCHIVAL INFORMATION PROCESSED")
+-else()
++elseif(NOT X265_SKIP_DETECT)
+     execute_process(
+         COMMAND
+         ${GIT_EXECUTABLE} describe --abbrev=0 --tags
