@@ -2,7 +2,8 @@ diff --git a/source/cmake/Version.cmake b/source/cmake/Version.cmake
 index 7592750..5617342 100644
 --- a/source/cmake/Version.cmake
 +++ b/source/cmake/Version.cmake
-@@ -27,4 +27,8 @@
+@@ -26,5 +26,9 @@
+ #################################################################################################################
  #Default Settings, for user to be vigilant about x265 version being reported during product build.
  set(X265_VERSION "unknown")
 -set(X265_LATEST_TAG "0.0")
