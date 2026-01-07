@@ -137,7 +137,8 @@ if [ "$BUILD_LICENSE" == "gpl" ]; then
     esac
 
     git -C x265_git fetch --tags
-    ./build-cmake-dep.sh x265_git/source -DCMAKE_SYSTEM_NAME=Windows -DCMAKE_SYSTEM_PROCESSOR=$CMAKE_ARCH -DENABLE_SHARED=$ENABLE_SHARED -DENABLE_CLI=OFF $X265_ARGS
+    X265_VER=$(git -C x265_git describe --abbrev=0 --tags)
+    ./build-cmake-dep.sh x265_git/source -DCMAKE_SYSTEM_NAME=Windows -DCMAKE_SYSTEM_PROCESSOR=$CMAKE_ARCH -DX265_LATEST_TAG=$X265_VER -DENABLE_SHARED=$ENABLE_SHARED -DENABLE_CLI=OFF $X265_ARGS
     add_ffargs "--enable-libx265"
 
     if [ "$BUILD_TYPE" == "shared" ]; then
