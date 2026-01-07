@@ -69,6 +69,7 @@ if [ -n "$ENABLE_LIBHARFBUZZ" ]; then
     add_ffargs "--enable-libharfbuzz"
 fi
 
+if [ -n "$ENABLE_LIBASS" ]; then
     ./build-libass.sh
 
     # Rename/copy static libs for MSVC
