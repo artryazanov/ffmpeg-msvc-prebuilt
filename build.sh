@@ -54,8 +54,20 @@ else
     ZLIB_OPTS="-DZLIB_BUILD_SHARED=ON -DZLIB_BUILD_STATIC=OFF"
 fi
 ./build-cmake-dep.sh zlib -DZLIB_BUILD_EXAMPLES=OFF $ZLIB_OPTS
-if [ -f "$INSTALL_PREFIX/lib/zlibstatic.lib" ]; then
-    cp "$INSTALL_PREFIX/lib/zlibstatic.lib" "$INSTALL_PREFIX/lib/zlib.lib"
+if [ ! -f "$INSTALL_PREFIX/lib/zlib.lib" ]; then
+    # Fallback: find any zlib*.lib or zlib*.a or libz*.a and copy it
+    # We search recursively in case it is deeply nested.
+    ZLIB_CACHED_LIB=$(find "$INSTALL_PREFIX" -name "zlib*.lib" -o -name "zlib*.a" -o -name "libz*.a" | head -n 1)
+    if [ -n "$ZLIB_CACHED_LIB" ]; then
+        echo "[DEBUG] Found zlib lib candidate: $ZLIB_CACHED_LIB"
+        cp "$ZLIB_CACHED_LIB" "$INSTALL_PREFIX/lib/zlib.lib"
+    else
+        echo "Error: zlib library not found in $INSTALL_PREFIX"
+    fi
+    echo "[DEBUG] Full recursive listing of $INSTALL_PREFIX:"
+    ls -R "$INSTALL_PREFIX"
+    echo "[DEBUG] Listing $INSTALL_PREFIX/lib after zlib build:"
+    ls -la "$INSTALL_PREFIX/lib"
 fi
 add_ffargs "--enable-zlib"
 
