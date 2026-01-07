@@ -17,7 +17,13 @@ echo -e "\n[Build fribidi]"
 cd $SRC_DIR/fribidi
 NOCONFIGURE=1 ./autogen.sh
 FRIBIDI_CFLAGS="-DHAVE_STRINGIZE" 
-CFLAGS="$FRIBIDI_CFLAGS" ./configure "--host=${BUILD_ARCH}-windows" --prefix=$INSTALL_PREFIX --disable-shared --enable-static --disable-dependency-tracking 
+if [ "$BUILD_ARCH" == "amd64" ]; then
+    CONFIGURE_HOST="x86_64-windows"
+else
+    CONFIGURE_HOST="${BUILD_ARCH}-windows"
+fi
+
+CFLAGS="$FRIBIDI_CFLAGS" ./configure "--host=$CONFIGURE_HOST" --prefix=$INSTALL_PREFIX --disable-shared --enable-static --disable-dependency-tracking 
 make -C lib fribidi-unicode-version.h CFLAGS="$FRIBIDI_CFLAGS" 
 make -C lib gen CFLAGS="$FRIBIDI_CFLAGS" 
 make -C lib install -j$(nproc) CFLAGS="$CFLAGS $FRIBIDI_CFLAGS" 
@@ -27,7 +33,13 @@ make install-data-am
 echo -e "\n[Build libass]"
 cd $SRC_DIR/libass
 NOCONFIGURE=1 ./autogen.sh
-CFLAGS="$CFLAGS" ./configure "--host=${BUILD_ARCH}-windows" --prefix=$INSTALL_PREFIX --disable-shared --enable-static --disable-asm --disable-dependency-tracking
+if [ "$BUILD_ARCH" == "amd64" ]; then
+    CONFIGURE_HOST="x86_64-windows"
+else
+    CONFIGURE_HOST="${BUILD_ARCH}-windows"
+fi
+
+CFLAGS="$CFLAGS" ./configure "--host=$CONFIGURE_HOST" --prefix=$INSTALL_PREFIX --disable-shared --enable-static --disable-asm --disable-dependency-tracking
 make install -j$(nproc)
 make install-data-am
 

@@ -104,7 +104,14 @@ if [ -n "$ENABLE_LIBVPX" ]; then
 
     LIBVPX_ARGS="--enable-static-msvcrt"
     apply-patch libvpx libvpx.patch
-    CFLAGS="" AS=yasm AR=lib ARFLAGS= CC=cl CXX=cl LD=link STRIP=false target= ./build-make-dep.sh libvpx --target=$libvpx_target --as=yasm --disable-optimizations --disable-dependency-tracking --disable-runtime-cpu-detect --disable-thumb --disable-neon --enable-external-build --disable-unit-tests --disable-decode-perf-tests --disable-encode-perf-tests --disable-tools --disable-examples $LIBVPX_ARGS
+    if [[ "$BUILD_ARCH" == "arm" || "$BUILD_ARCH" == "arm64" ]]; then
+        VPX_AS_FLAGS="--as=auto"
+        VPX_AS_ENV=""
+    else
+        VPX_AS_FLAGS="--as=yasm"
+        VPX_AS_ENV="AS=yasm"
+    fi
+    CFLAGS="" $VPX_AS_ENV AR=lib ARFLAGS= CC=cl CXX=cl LD=link STRIP=false target= ./build-make-dep.sh libvpx --target=$libvpx_target $VPX_AS_FLAGS --disable-optimizations --disable-dependency-tracking --disable-runtime-cpu-detect --disable-thumb --disable-neon --enable-external-build --disable-unit-tests --disable-decode-perf-tests --disable-encode-perf-tests --disable-tools --disable-examples $LIBVPX_ARGS
     add_ffargs "--enable-libvpx"
 fi
 
