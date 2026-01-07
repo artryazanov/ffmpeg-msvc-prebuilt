@@ -3,8 +3,8 @@ index 7592750..5617342 100644
 --- a/source/cmake/Version.cmake
 +++ b/source/cmake/Version.cmake
 @@ -26,5 +26,9 @@
- #################################################################################################################
- #Default Settings, for user to be vigilant about x265 version being reported during product build.
+  #################################################################################################################
+  #Default Settings, for user to be vigilant about x265 version being reported during product build.
  set(X265_VERSION "unknown")
 -set(X265_LATEST_TAG "0.0")
 +if(DEFINED X265_LATEST_TAG)
