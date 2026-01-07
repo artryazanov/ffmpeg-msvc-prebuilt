@@ -43,7 +43,7 @@ apply-patch() {
 }
 
 apply-patch zlib zlib.patch
-apply-patch FFmpeg ffmpeg.patch
+# apply-patch FFmpeg ffmpeg.patch
 apply-patch harfbuzz harfbuzz.patch
 
 ./build-make-dep.sh nv-codec-headers
