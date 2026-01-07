@@ -128,6 +128,9 @@ if [ "$BUILD_LICENSE" == "gpl" ]; then
     if [ "$BUILD_ARCH" == arm ]; then
         apply-patch x265_git x265_git-arm.patch
     fi
+    if [ "$BUILD_ARCH" == arm64 ]; then
+        apply-patch x265_git x265_git-arm64-msvc.patch
+    fi
     apply-patch x265_git x265_git-version.patch
 
     case $BUILD_ARCH in
