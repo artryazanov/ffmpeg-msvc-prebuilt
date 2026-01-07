@@ -75,7 +75,7 @@ fi
 
 
 if [ -n "$ENABLE_SDL" ]; then
-    ./build-cmake-dep.sh SDL -DSDL_LIBC=ON -DCMAKE_SHARED_LINKER_FLAGS="/defaultlib:vcruntime.lib /defaultlib:ucrt.lib /defaultlib:msvcrt.lib"
+    ./build-cmake-dep.sh SDL -DSDL_LIBC=ON -DCMAKE_SHARED_LINKER_FLAGS="/nodefaultlib:libvcruntime.lib /defaultlib:vcruntime.lib /defaultlib:ucrt.lib /defaultlib:msvcrt.lib"
     add_ffargs "--enable-sdl"
 fi
 
