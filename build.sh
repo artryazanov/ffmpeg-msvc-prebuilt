@@ -17,9 +17,12 @@ shift 3 || true
 FF_ARGS=$@
 
 for dep in libharfbuzz libfreetype sdl libjxl libvpx libwebp libass; do
-    if grep -q "enable-${dep}" FFmpeg/configure; then
+    # Use sed to detect the option as grep might fail in some envs or with CRLF
+    if [ -n "$(sed -n "/enable-${dep}/p" FFmpeg/configure | head -n 1)" ]; then
         export ENABLE_${dep^^}=1
-        # FF_ARGS="$FF_ARGS --enable-$dep"
+        echo "Detected enabled dependency: $dep"
+    else
+        echo "Dependency $dep NOT found in configure"
     fi
 done
 
