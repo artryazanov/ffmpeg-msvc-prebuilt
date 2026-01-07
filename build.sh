@@ -129,8 +129,15 @@ if [ "$BUILD_LICENSE" == "gpl" ]; then
         apply-patch x265_git x265_git-arm.patch
     fi
 
+    case $BUILD_ARCH in
+        amd64) CMAKE_ARCH=AMD64 ;;
+        x86)   CMAKE_ARCH=x86 ;;
+        arm64) CMAKE_ARCH=ARM64 ;;
+        arm)   CMAKE_ARCH=ARM ;;
+    esac
+
     git -C x265_git fetch --tags
-    ./build-cmake-dep.sh x265_git/source -DCMAKE_SYSTEM_NAME=Windows -DENABLE_SHARED=$ENABLE_SHARED -DENABLE_CLI=OFF $X265_ARGS
+    ./build-cmake-dep.sh x265_git/source -DCMAKE_SYSTEM_NAME=Windows -DCMAKE_SYSTEM_PROCESSOR=$CMAKE_ARCH -DENABLE_SHARED=$ENABLE_SHARED -DENABLE_CLI=OFF $X265_ARGS
     add_ffargs "--enable-libx265"
 
     if [ "$BUILD_TYPE" == "shared" ]; then
