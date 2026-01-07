@@ -54,6 +54,9 @@ else
     ZLIB_OPTS="-DZLIB_BUILD_SHARED=ON -DZLIB_BUILD_STATIC=OFF"
 fi
 ./build-cmake-dep.sh zlib -DZLIB_BUILD_EXAMPLES=OFF $ZLIB_OPTS
+if [ -f "$INSTALL_PREFIX/lib/zlibstatic.lib" ]; then
+    cp "$INSTALL_PREFIX/lib/zlibstatic.lib" "$INSTALL_PREFIX/lib/zlib.lib"
+fi
 add_ffargs "--enable-zlib"
 
 if [ -n "$ENABLE_LIBFREETYPE" ]; then
@@ -66,9 +69,17 @@ if [ -n "$ENABLE_LIBHARFBUZZ" ]; then
     add_ffargs "--enable-libharfbuzz"
 fi
 
-if [ -n "$ENABLE_LIBASS" ]; then
-    # apply-patch fribidi fribidi.patch
     ./build-libass.sh
+
+    # Rename/copy static libs for MSVC
+    if [ -f "$INSTALL_PREFIX/lib/libfribidi.a" ]; then
+            cp "$INSTALL_PREFIX/lib/libfribidi.a" "$INSTALL_PREFIX/lib/fribidi.lib"
+    fi
+    if [ -f "$INSTALL_PREFIX/lib/libass.a" ]; then
+            cp "$INSTALL_PREFIX/lib/libass.a" "$INSTALL_PREFIX/lib/ass.lib"
+            cp "$INSTALL_PREFIX/lib/libass.a" "$INSTALL_PREFIX/lib/libass.lib"
+    fi
+
     add_ffargs "--enable-libass"
 fi
 
@@ -112,6 +123,16 @@ if [ -n "$ENABLE_LIBVPX" ]; then
         VPX_AS_VAL="yasm"
     fi
     env CFLAGS="" AS="$VPX_AS_VAL" AR=lib ARFLAGS= CC=cl CXX=cl LD=link STRIP=false target= ./build-make-dep.sh libvpx --target=$libvpx_target $VPX_AS_FLAGS --disable-optimizations --disable-dependency-tracking --disable-runtime-cpu-detect --disable-thumb --disable-neon --enable-external-build --disable-unit-tests --disable-decode-perf-tests --disable-encode-perf-tests --disable-tools --disable-examples $LIBVPX_ARGS
+    
+    # Fix vpx.lib missing for shared/static builds
+    if [ -f "$INSTALL_PREFIX/lib/vpxmt.lib" ]; then
+        cp "$INSTALL_PREFIX/lib/vpxmt.lib" "$INSTALL_PREFIX/lib/vpx.lib"
+    elif [ -f "$INSTALL_PREFIX/lib/vpxmd.lib" ]; then
+        cp "$INSTALL_PREFIX/lib/vpxmd.lib" "$INSTALL_PREFIX/lib/vpx.lib"
+    elif [ -f "$INSTALL_PREFIX/lib/vpx.dll.lib" ]; then
+        cp "$INSTALL_PREFIX/lib/vpx.dll.lib" "$INSTALL_PREFIX/lib/vpx.lib"
+    fi
+
     add_ffargs "--enable-libvpx"
 fi
 
