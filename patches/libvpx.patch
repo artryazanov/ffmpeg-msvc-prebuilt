@@ -278,7 +278,7 @@ index d5076b7e8..70affdace 100644
  endif
  
  CODEC_SRCS-yes += build/make/version.sh
-@@ -183,9 +183,11 @@ INSTALL-LIBS-$(CONFIG_ENCODERS) += include/vpx/vpx_tpl.h
+@@ -182,11 +182,11 @@ INSTALL-LIBS-$(CONFIG_ENCODERS) += include/vpx/vpx_tpl.h
  ifeq ($(CONFIG_EXTERNAL_BUILD),yes)
  ifeq ($(CONFIG_MSVS),yes)
 -INSTALL-LIBS-yes                  += $(foreach p,$(VS_PLATFORMS),$(LIBSUBDIR)/$(p)/$(CODEC_LIB).lib)
