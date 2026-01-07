@@ -1,0 +1,28 @@
+diff --git a/source/common/aarch64/intrapred-prim.cpp b/source/common/aarch64/intrapred-prim.cpp
+index 72ef420..81977e2 100644
+--- a/source/common/aarch64/intrapred-prim.cpp
++++ b/source/common/aarch64/intrapred-prim.cpp
+@@ -2,7 +2,7 @@
+ #include "primitives.h"
+
+
+-#if HAVE_NEON
++#if HAVE_NEON || defined(_M_ARM64)
+ #include "arm64-utils.h"
+ #include "mem-neon.h"
+ #include <arm_neon.h>
+@@ -227,7 +227,6 @@ void intra_pred_ang_neon(pixel *dst, intptr_t dstStride, const pixel *srcPix0, i
+     }
+ }
+
+-#endif
+ template<int log2Size>
+ void all_angs_pred_neon(pixel *dest, pixel *refPix, pixel *filtPix, int bLuma)
+ {
+@@ -624,4 +623,4 @@ void setupIntraPrimitives_neon(EncoderPrimitives &p)
+     p.cu[BLOCK_16x16].intra_pred[DC_IDX] = intra_pred_dc_neon<16>;
+     p.cu[BLOCK_32x32].intra_pred[DC_IDX] = intra_pred_dc_neon<32>;
+ }
+ }
++
++#endif

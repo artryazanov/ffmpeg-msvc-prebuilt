@@ -60,17 +60,13 @@ fi
 if [ ! -f "$INSTALL_PREFIX/lib/zlib.lib" ]; then
     # Fallback: find any zlib*.lib or zlib*.a or libz*.a and copy it
     # We search recursively in case it is deeply nested.
-    ZLIB_CACHED_LIB=$(find "$INSTALL_PREFIX" -name "zlib*.lib" -o -name "zlib*.a" -o -name "libz*.a" | head -n 1)
+    ZLIB_CACHED_LIB=$(find "$INSTALL_PREFIX" -name "zlib*.lib" -o -name "zlib*.a" -o -name "libz*.a" -o -name "z.lib" | head -n 1)
     if [ -n "$ZLIB_CACHED_LIB" ]; then
         echo "[DEBUG] Found zlib lib candidate: $ZLIB_CACHED_LIB"
         cp "$ZLIB_CACHED_LIB" "$INSTALL_PREFIX/lib/zlib.lib"
     else
         echo "Error: zlib library not found in $INSTALL_PREFIX"
     fi
-    echo "[DEBUG] Full recursive listing of $INSTALL_PREFIX:"
-    ls -R "$INSTALL_PREFIX"
-    echo "[DEBUG] Listing $INSTALL_PREFIX/lib after zlib build:"
-    ls -la "$INSTALL_PREFIX/lib"
 fi
 add_ffargs "--enable-zlib"
 
@@ -149,6 +145,26 @@ if [ -n "$ENABLE_LIBVPX" ]; then
         cp "$INSTALL_PREFIX/lib/vpx.dll.lib" "$INSTALL_PREFIX/lib/vpx.lib"
     fi
 
+    if [ ! -f "$INSTALL_PREFIX/lib/pkgconfig/vpx.pc" ]; then
+        echo "Generating vpx.pc..."
+        mkdir -p "$INSTALL_PREFIX/lib/pkgconfig"
+        cat > "$INSTALL_PREFIX/lib/pkgconfig/vpx.pc" <<EOF
+prefix=$INSTALL_PREFIX
+exec_prefix=\${prefix}
+libdir=\${prefix}/lib
+includedir=\${prefix}/include
+
+Name: vpx
+Description: WebM Project VPx codec implementation
+Version: 1.14.1
+Requires:
+Conflicts:
+Libs: -L\${libdir} -lvpx
+Libs.private: -lm
+Cflags: -I\${includedir}
+EOF
+    fi
+
     add_ffargs "--enable-libvpx"
 fi
 
@@ -174,6 +190,7 @@ if [ "$BUILD_LICENSE" == "gpl" ]; then
     fi
     if [ "$BUILD_ARCH" == arm64 ]; then
         apply-patch x265_git x265_git-arm64-msvc.patch
+        apply-patch x265_git x265_git-arm64-intrapred-fix.patch
     fi
     apply-patch x265_git x265_git-version.patch
 
