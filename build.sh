@@ -48,7 +48,12 @@ apply-patch harfbuzz harfbuzz.patch
 
 ./build-make-dep.sh nv-codec-headers
 
-./build-cmake-dep.sh zlib -DZLIB_BUILD_EXAMPLES=OFF
+if [ "$BUILD_TYPE" == "static" ]; then
+    ZLIB_OPTS="-DZLIB_BUILD_SHARED=OFF -DZLIB_BUILD_STATIC=ON"
+else
+    ZLIB_OPTS="-DZLIB_BUILD_SHARED=ON -DZLIB_BUILD_STATIC=OFF"
+fi
+./build-cmake-dep.sh zlib -DZLIB_BUILD_EXAMPLES=OFF $ZLIB_OPTS
 add_ffargs "--enable-zlib"
 
 if [ -n "$ENABLE_LIBFREETYPE" ]; then

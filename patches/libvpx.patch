@@ -278,54 +278,22 @@ index d5076b7e8..70affdace 100644
  endif
  
  CODEC_SRCS-yes += build/make/version.sh
-@@ -181,10 +181,10 @@ INSTALL-LIBS-$(CONFIG_ENCODERS) += include/vpx/vpx_encoder.h
- INSTALL-LIBS-$(CONFIG_ENCODERS) += include/vpx/vpx_tpl.h
+@@ -183,9 +183,11 @@ INSTALL-LIBS-$(CONFIG_ENCODERS) += include/vpx/vpx_tpl.h
  ifeq ($(CONFIG_EXTERNAL_BUILD),yes)
  ifeq ($(CONFIG_MSVS),yes)
 -INSTALL-LIBS-yes                  += $(foreach p,$(VS_PLATFORMS),$(LIBSUBDIR)/$(p)/$(CODEC_LIB).lib)
++INSTALL-LIBS-yes                  += $(foreach p,$(VS_PLATFORMS),$(LIBSUBDIR)/$(CODEC_LIB).lib)
+ ifeq ($(CONFIG_STATIC),yes)
 -INSTALL-LIBS-$(CONFIG_DEBUG_LIBS) += $(foreach p,$(VS_PLATFORMS),$(LIBSUBDIR)/$(p)/$(CODEC_LIB)d.lib)
++INSTALL-LIBS-$(CONFIG_DEBUG_LIBS) += $(foreach p,$(VS_PLATFORMS),$(LIBSUBDIR)/$(CODEC_LIB)d.lib)
+ endif
 -INSTALL-LIBS-$(CONFIG_SHARED) += $(foreach p,$(VS_PLATFORMS),$(LIBSUBDIR)/$(p)/vpx.dll)
 -INSTALL-LIBS-$(CONFIG_SHARED) += $(foreach p,$(VS_PLATFORMS),$(LIBSUBDIR)/$(p)/vpx.exp)
-+INSTALL-LIBS-yes                  += $(foreach p,$(VS_PLATFORMS),$(LIBSUBDIR)/$(CODEC_LIB).lib)
-+INSTALL-LIBS-$(CONFIG_DEBUG_LIBS) += $(foreach p,$(VS_PLATFORMS),$(LIBSUBDIR)/$(CODEC_LIB)d.lib)
 +INSTALL-LIBS-$(CONFIG_SHARED) += $(foreach p,$(VS_PLATFORMS),$(LIBSUBDIR)/vpx.dll)
 +INSTALL-LIBS-$(CONFIG_SHARED) += $(foreach p,$(VS_PLATFORMS),$(LIBSUBDIR)/vpx.exp)
  endif
  else
  INSTALL-LIBS-$(CONFIG_STATIC) += $(LIBSUBDIR)/libvpx.a
-@@ -299,6 +299,32 @@ PROJECTS-yes += vpxrc.$(VCPROJ_SFX)
- vpxrc.$(VCPROJ_SFX): vpx_config.asm
- vpxrc.$(VCPROJ_SFX): $(RTCD)
- 
-+
-+LIBS-yes += vpx.pc
-+vpx.pc: config.mk libs.mk
-+	@echo "    [CREATE] $@"
-+	$(qexec)echo '# pkg-config file from libvpx $(VERSION_STRING)' > $@
-+	$(qexec)echo 'prefix=$(PREFIX)' >> $@
-+	$(qexec)echo 'exec_prefix=$${prefix}' >> $@
-+	$(qexec)echo 'libdir=$${prefix}/$(LIBSUBDIR)' >> $@
-+	$(qexec)echo 'includedir=$${prefix}/include' >> $@
-+	$(qexec)echo '' >> $@
-+	$(qexec)echo 'Name: vpx' >> $@
-+	$(qexec)echo 'Description: WebM Project VPx codec implementation' >> $@
-+	$(qexec)echo 'Version: $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_PATCH)' >> $@
-+	$(qexec)echo 'Requires:' >> $@
-+	$(qexec)echo 'Conflicts:' >> $@
-+	$(qexec)echo 'Libs: -L$${libdir} -lvpx$(if $(CONFIG_STATIC_MSVCRT),mt,md -lmsvcrt)' >> $@
-+ifeq ($(HAVE_PTHREAD_H),yes)
-+	$(qexec)echo 'Libs.private: -lpthread' >> $@
-+else
-+	$(qexec)echo 'Libs.private: ' >> $@
-+endif
-+	$(qexec)echo 'Cflags: -I$${includedir}' >> $@
-+INSTALL-LIBS-yes += $(LIBSUBDIR)/pkgconfig/vpx.pc
-+INSTALL_MAPS += $(LIBSUBDIR)/pkgconfig/%.pc %.pc
-+CLEAN-OBJS += vpx.pc
-+
- endif # ifeq ($(CONFIG_MSVS),yes)
- else # ifeq ($(CONFIG_EXTERNAL_BUILD),yes)
- LIBVPX_OBJS=$(call objs, $(filter-out $(ASM_INCLUDES), $(CODEC_SRCS)))
 diff --git a/solution.mk b/solution.mk
 index 145adc0dd..5c1b3ff19 100644
 --- a/solution.mk
