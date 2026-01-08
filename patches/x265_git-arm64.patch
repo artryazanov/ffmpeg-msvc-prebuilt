@@ -1,5 +1,5 @@
 diff --git a/source/common/aarch64/intrapred-prim.cpp b/source/common/aarch64/intrapred-prim.cpp
-index 1234567..8901234 100644
+index 0000000..0000000 100644
 --- a/source/common/aarch64/intrapred-prim.cpp
 +++ b/source/common/aarch64/intrapred-prim.cpp
 @@ -2,7 +2,7 @@
@@ -11,25 +11,113 @@ index 1234567..8901234 100644
  #include "arm64-utils.h"
  #include "mem-neon.h"
  #include <arm_neon.h>
-@@ -235,7 +235,6 @@ void intra_pred_ang_neon(pixel *dst, intptr_t dstStride, const pixel *srcPix0, i
-     }
- }
- 
--#endif
- template<int log2Size>
- void all_angs_pred_neon(pixel *dest, pixel *refPix, pixel *filtPix, int bLuma)
- {
-@@ -707,7 +706,7 @@ void intra_pred_dc_neon(pixel* dst, intptr_t dstStride, const pixel* srcPix, int
-         dcPredFilter(srcPix + 1, srcPix + (2 * width + 1), dst, dstStride, width);
- }
- }
+@@ -541,34 +541,35 @@
+     case 16:
+     case 8:
+     {
++#if HIGH_BIT_DEPTH
+         uint16x8_t vconst_3 = vdupq_n_u16(3);
+         uint16x8_t vconst_2 = vdupq_n_u16(2);
+         for (int x = 0; x < size; x += 8) {
+-            uint16x8_t vabo = { (uint16_t)(above[x + 0]),
+-                                (uint16_t)(above[x + 1]),
+-                                (uint16_t)(above[x + 2]),
+-                                (uint16_t)(above[x + 3]),
+-                                (uint16_t)(above[x + 4]),
+-                                (uint16_t)(above[x + 5]),
+-                                (uint16_t)(above[x + 6]),
+-                                (uint16_t)(above[x + 7]) };
 -
+-            uint16x8_t vdst = { (uint16_t)(dst[x + 0]),
+-                                (uint16_t)(dst[x + 1]),
+-                                (uint16_t)(dst[x + 2]),
+-                                (uint16_t)(dst[x + 3]),
+-                                (uint16_t)(dst[x + 4]),
+-                                (uint16_t)(dst[x + 5]),
+-                                (uint16_t)(dst[x + 6]),
+-                                (uint16_t)(dst[x + 7]) };
+-            //  dst[x] = (pixel)((above[x] +  3 * dst[x] + 2) >> 2);
++            uint16x8_t vabo = vld1q_u16(above + x);
++            uint16x8_t vdst = vld1q_u16(dst + x);
++
+             vdst = vmulq_u16(vdst, vconst_3);
+             vdst = vaddq_u16(vdst, vabo);
+             vdst = vaddq_u16(vdst, vconst_2);
+             vdst = vshrq_n_u16(vdst, 2);
+-            for (int i = 0; i < 8; i++)
+-                dst[x + i] = (pixel)(vdst[i]);
+-        }
++
++            vst1q_u16(dst + x, vdst);
++        }
++#else
++        uint16x8_t vconst_3 = vdupq_n_u16(3);
++        uint16x8_t vconst_2 = vdupq_n_u16(2);
++        for (int x = 0; x < size; x += 8) {
++            uint16x8_t vabo = vmovl_u8(vld1_u8((const uint8_t*)(above + x)));
++            uint16x8_t vdst = vmovl_u8(vld1_u8((uint8_t*)(dst + x)));
++
++            vdst = vmulq_u16(vdst, vconst_3);
++            vdst = vaddq_u16(vdst, vabo);
++            vdst = vaddq_u16(vdst, vconst_2);
++            vdst = vshrq_n_u16(vdst, 2);
++
++            vst1_u8((uint8_t*)(dst + x), vmovn_u16(vdst));
++        }
 +#endif
- namespace X265_NS
- {
- // x265 private namespace
+         dst += dststride;
+         for (int y = 1; y < size; y++)
+         {
+@@ -579,22 +580,37 @@
+     break;
+     case 4:
+     {
++#if HIGH_BIT_DEPTH
+         uint16x4_t vconst_3 = vdup_n_u16(3);
+         uint16x4_t vconst_2 = vdup_n_u16(2);
+-        uint16x4_t vabo = { (uint16_t)(above[0]),
+-                            (uint16_t)(above[1]),
+-                            (uint16_t)(above[2]),
+-                            (uint16_t)(above[3]) };
+-        uint16x4_t vdstx = { (uint16_t)(dst[0]),
+-                             (uint16_t)(dst[1]),
+-                             (uint16_t)(dst[2]),
+-                             (uint16_t)(dst[3]) };
++        uint16x4_t vabo = vld1_u16(above);
++        uint16x4_t vdstx = vld1_u16(dst);
++
+         vdstx = vmul_u16(vdstx, vconst_3);
+         vdstx = vadd_u16(vdstx, vabo);
+         vdstx = vadd_u16(vdstx, vconst_2);
+         vdstx = vshr_n_u16(vdstx, 2);
+-        for (int i = 0; i < 4; i++)
+-            dst[i] = (pixel)(vdstx[i]);
++        vst1_u16(dst, vdstx);
++#else
++        uint16x4_t vconst_3 = vdup_n_u16(3);
++        uint16x4_t vconst_2 = vdup_n_u16(2);
++
++        uint8x8_t vabo_u8 = vdup_n_u8(0);
++        vabo_u8 = vreinterpret_u8_u32(vld1_lane_u32((const uint32_t*)above, vreinterpret_u32_u8(vabo_u8), 0));
++        uint16x4_t vabo = vget_low_u16(vmovl_u8(vabo_u8));
++
++        uint8x8_t vdst_u8 = vdup_n_u8(0);
++        vdst_u8 = vreinterpret_u8_u32(vld1_lane_u32((const uint32_t*)dst, vreinterpret_u32_u8(vdst_u8), 0));
++        uint16x4_t vdstx = vget_low_u16(vmovl_u8(vdst_u8));
++
++        vdstx = vmul_u16(vdstx, vconst_3);
++        vdstx = vadd_u16(vdstx, vabo);
++        vdstx = vadd_u16(vdstx, vconst_2);
++        vdstx = vshr_n_u16(vdstx, 2);
++
++        uint16x8_t vdst_comb = vcombine_u16(vdstx, vdup_n_u16(0));
++        vst1_lane_u32((uint32_t *)dst, vreinterpret_u32_u8(vmovn_u16(vdst_comb)), 0);
++#endif
+
+         dst += dststride;
+         for (int y = 1; y < size; y++)
 diff --git a/source/common/aarch64/intrapred-prim.h b/source/common/aarch64/intrapred-prim.h
-index 1234567..8901234 100644
+index 0000000..0000000 100644
 --- a/source/common/aarch64/intrapred-prim.h
 +++ b/source/common/aarch64/intrapred-prim.h
 @@ -1,6 +1,6 @@
