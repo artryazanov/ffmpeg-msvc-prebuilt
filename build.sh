@@ -184,8 +184,11 @@ if [ "$BUILD_LICENSE" == "gpl" ]; then
         ENABLE_SHARED=ON
     fi
 
-    if [ "$BUILD_ARCH" == arm ]; then
+    if [ "$BUILD_ARCH" == "arm" ]; then
         apply-patch x265_git x265_git-arm.patch
+    fi
+    if [ "$BUILD_ARCH" == "arm64" ]; then
+        apply-patch x265_git x265_git-arm64.patch
     fi
     apply-patch x265_git x265_git-version.patch
 
