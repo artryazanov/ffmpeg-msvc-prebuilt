@@ -2,7 +2,10 @@
 
 This repository provides **FFmpeg builds** compiled with **MSVC (Microsoft Visual C++)**, leveraging GitHub Actions to automate the process. Each release includes complete precompiled binaries, libraries, and development files, optimized for various platforms and configurations.
 
-[![Build FFmpeg](https://github.com/System233/ffmpeg-builds/actions/workflows/build.yml/badge.svg?event=push)](https://github.com/System233/ffmpeg-builds/actions/workflows/build.yml)
+[![Build FFmpeg](https://github.com/artryazanov/ffmpeg-msvc-prebuilt/actions/workflows/build.yml/badge.svg?event=push)](https://github.com/artryazanov/ffmpeg-msvc-prebuilt/actions/workflows/build.yml)
+[![GitHub Release](https://img.shields.io/github/v/release/artryazanov/ffmpeg-msvc-prebuilt)](https://github.com/artryazanov/ffmpeg-msvc-prebuilt/releases)
+[![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/artryazanov/ffmpeg-msvc-prebuilt/total)](https://github.com/artryazanov/ffmpeg-msvc-prebuilt/releases)
+[![GitHub License](https://img.shields.io/github/license/artryazanov/ffmpeg-msvc-prebuilt)](https://github.com/artryazanov/ffmpeg-msvc-prebuilt/blob/master/LICENSE)
 
 ## Contents of the Release Packages
 
@@ -15,11 +18,11 @@ Each release provides the following for all build variants, architectures, and l
 5. **CMake configuration files** for easy integration with CMake-based projects.
 6. **SHA1 checksum files** for verifying integrity.
 
-The files are packaged into **.zip** archives for each configuration, making it easy to download and integrate into your workflow.
+The files are packaged into **.zip** archives for each configuration, making it easy to integrate into your workflow.
 
 ## Downloading and Using the Builds
 
-1. Visit the **[Releases](https://github.com/System233/ffmpeg-msvc-prebuilt/releases)** section.
+1. Visit the **[Releases](https://github.com/artryazanov/ffmpeg-msvc-prebuilt/releases)** section.
 2. Download the `.zip` archive and its corresponding `.sha1` checksum file for your desired configuration.
 3. Verify the archive integrity using the `.sha1` checksum file.
    ```sh
@@ -44,7 +47,6 @@ The files are packaged into **.zip** archives for each configuration, making it 
 - **amd64** (x86_64)
 - **x86** (32-bit)
 - **arm** (armv7l)
-- **arm64** (aarch64)
 
 ### Licensing Options
 
@@ -73,4 +75,5 @@ All builds include the following libraries:
 ## License
 
 - The scripts in this repository are licensed under the **MIT License**.
+- This project is a fork maintained by **Artem Ryazanov**. All improvements and modifications are also provided under the **MIT License**.
 - The binaries inherit the licensing terms of FFmpeg and its dependencies, which may include **GPL** or **LGPL**.
