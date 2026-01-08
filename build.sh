@@ -160,7 +160,6 @@ Version: 1.14.1
 Requires:
 Conflicts:
 Libs: -L\${libdir} -lvpx
-Libs.private: -lm
 Cflags: -I\${includedir}
 EOF
     fi
