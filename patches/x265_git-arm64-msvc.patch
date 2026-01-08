@@ -1,0 +1,42 @@
+diff --git a/source/common/aarch64/intrapred-prim.cpp b/source/common/aarch64/intrapred-prim.cpp
+index 1234567..8901234 100644
+--- a/source/common/aarch64/intrapred-prim.cpp
++++ b/source/common/aarch64/intrapred-prim.cpp
+@@ -2,7 +2,7 @@
+ #include "primitives.h"
+
+
+-#if HAVE_NEON
++#if HAVE_NEON || defined(_M_ARM64)
+ #include "arm64-utils.h"
+ #include "mem-neon.h"
+ #include <arm_neon.h>
+@@ -235,7 +235,6 @@ void intra_pred_ang_neon(pixel *dst, intptr_t dstStride, const pixel *srcPix0, i
+     }
+ }
+
+-#endif
+ template<int log2Size>
+ void all_angs_pred_neon(pixel *dest, pixel *refPix, pixel *filtPix, int bLuma)
+ {
+@@ -707,7 +706,7 @@ void intra_pred_dc_neon(pixel* dst, intptr_t dstStride, const pixel* srcPix, int
+         dcPredFilter(srcPix + 1, srcPix + (2 * width + 1), dst, dstStride, width);
+ }
+ }
+-
++#endif
+ namespace X265_NS
+ {
+ // x265 private namespace
+diff --git a/source/common/aarch64/intrapred-prim.h b/source/common/aarch64/intrapred-prim.h
+index 1234567..8901234 100644
+--- a/source/common/aarch64/intrapred-prim.h
++++ b/source/common/aarch64/intrapred-prim.h
+@@ -1,6 +1,6 @@
+ #ifndef INTRAPRED_PRIM_H__
+
+-#if defined(__aarch64__)
++#if defined(__aarch64__) || defined(_M_ARM64)
+
+ namespace X265_NS
+ {
