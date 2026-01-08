@@ -181,7 +181,7 @@ index 3d4b476..5180b4d 100644
 +#endif
          uint16x4_t vsp = vadd_u16(spa, spb);
          dcVal += vaddlv_u16(vsp);
-
+ 
          dcVal = dcVal / (width + width);
          for (k = 0; k < width; k++) {
              uint16x4_t vdv = vdup_n_u16((pixel)dcVal);
