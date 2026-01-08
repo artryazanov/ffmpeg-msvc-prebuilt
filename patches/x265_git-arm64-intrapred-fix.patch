@@ -19,7 +19,7 @@ index 72ef420..81977e2 100644
  template<int log2Size>
  void all_angs_pred_neon(pixel *dest, pixel *refPix, pixel *filtPix, int bLuma)
  {
-@@ -624,4 +623,4 @@ void setupIntraPrimitives_neon(EncoderPrimitives &p)
+@@ -624,4 +623,6 @@ void setupIntraPrimitives_neon(EncoderPrimitives &p)
      p.cu[BLOCK_16x16].intra_pred[DC_IDX] = intra_pred_dc_neon<16>;
      p.cu[BLOCK_32x32].intra_pred[DC_IDX] = intra_pred_dc_neon<32>;
  }
