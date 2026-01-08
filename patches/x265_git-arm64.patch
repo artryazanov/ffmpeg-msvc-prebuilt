@@ -1,5 +1,5 @@
-diff --git a/source/common/aarch64/intrapred-prim.cpp b/source/common/aarch64/intrapred-prim.cpp
-index 0000000..0000000 100644
+﻿diff --git a/source/common/aarch64/intrapred-prim.cpp b/source/common/aarch64/intrapred-prim.cpp
+index 3d4b4769f..1a8a140f8 100644
 --- a/source/common/aarch64/intrapred-prim.cpp
 +++ b/source/common/aarch64/intrapred-prim.cpp
 @@ -2,7 +2,7 @@
@@ -11,7 +11,7 @@ index 0000000..0000000 100644
  #include "arm64-utils.h"
  #include "mem-neon.h"
  #include <arm_neon.h>
-@@ -541,34 +541,35 @@
+@@ -541,34 +541,35 @@ static void dcPredFilter(const pixel* above, const pixel* left, pixel* dst, intp
      case 16:
      case 8:
      {
@@ -40,13 +40,10 @@ index 0000000..0000000 100644
 +            uint16x8_t vabo = vld1q_u16(above + x);
 +            uint16x8_t vdst = vld1q_u16(dst + x);
 +
-             vdst = vmulq_u16(vdst, vconst_3);
-             vdst = vaddq_u16(vdst, vabo);
-             vdst = vaddq_u16(vdst, vconst_2);
-             vdst = vshrq_n_u16(vdst, 2);
--            for (int i = 0; i < 8; i++)
--                dst[x + i] = (pixel)(vdst[i]);
--        }
++            vdst = vmulq_u16(vdst, vconst_3);
++            vdst = vaddq_u16(vdst, vabo);
++            vdst = vaddq_u16(vdst, vconst_2);
++            vdst = vshrq_n_u16(vdst, 2);
 +
 +            vst1q_u16(dst + x, vdst);
 +        }
@@ -57,18 +54,20 @@ index 0000000..0000000 100644
 +            uint16x8_t vabo = vmovl_u8(vld1_u8((const uint8_t*)(above + x)));
 +            uint16x8_t vdst = vmovl_u8(vld1_u8((uint8_t*)(dst + x)));
 +
-+            vdst = vmulq_u16(vdst, vconst_3);
-+            vdst = vaddq_u16(vdst, vabo);
-+            vdst = vaddq_u16(vdst, vconst_2);
-+            vdst = vshrq_n_u16(vdst, 2);
+             vdst = vmulq_u16(vdst, vconst_3);
+             vdst = vaddq_u16(vdst, vabo);
+             vdst = vaddq_u16(vdst, vconst_2);
+             vdst = vshrq_n_u16(vdst, 2);
+-            for (int i = 0; i < 8; i++)
+-                dst[x + i] = (pixel)(vdst[i]);
 +
 +            vst1_u8((uint8_t*)(dst + x), vmovn_u16(vdst));
-+        }
+         }
 +#endif
          dst += dststride;
          for (int y = 1; y < size; y++)
          {
-@@ -579,22 +580,37 @@
+@@ -579,22 +580,37 @@ static void dcPredFilter(const pixel* above, const pixel* left, pixel* dst, intp
      break;
      case 4:
      {
@@ -113,11 +112,11 @@ index 0000000..0000000 100644
 +        uint16x8_t vdst_comb = vcombine_u16(vdstx, vdup_n_u16(0));
 +        vst1_lane_u32((uint32_t *)dst, vreinterpret_u32_u8(vmovn_u16(vdst_comb)), 0);
 +#endif
-
+ 
          dst += dststride;
          for (int y = 1; y < size; y++)
 diff --git a/source/common/aarch64/intrapred-prim.h b/source/common/aarch64/intrapred-prim.h
-index 0000000..0000000 100644
+index 31da91dfa..9ee057b1e 100644
 --- a/source/common/aarch64/intrapred-prim.h
 +++ b/source/common/aarch64/intrapred-prim.h
 @@ -1,6 +1,6 @@
@@ -128,3 +127,5 @@ index 0000000..0000000 100644
  
  namespace X265_NS
  {
+ 
+
