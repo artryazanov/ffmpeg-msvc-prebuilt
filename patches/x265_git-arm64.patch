@@ -1,5 +1,5 @@
-﻿diff --git a/source/common/aarch64/intrapred-prim.cpp b/source/common/aarch64/intrapred-prim.cpp
-index 3d4b4769f..1a8a140f8 100644
+diff --git a/source/common/aarch64/intrapred-prim.cpp b/source/common/aarch64/intrapred-prim.cpp
+index 3d4b476..5180b4d 100644
 --- a/source/common/aarch64/intrapred-prim.cpp
 +++ b/source/common/aarch64/intrapred-prim.cpp
 @@ -2,7 +2,7 @@
@@ -72,6 +72,17 @@ index 3d4b4769f..1a8a140f8 100644
      case 4:
      {
 +#if HIGH_BIT_DEPTH
++        uint16x4_t vconst_3 = vdup_n_u16(3);
++        uint16x4_t vconst_2 = vdup_n_u16(2);
++        uint16x4_t vabo = vld1_u16(above);
++        uint16x4_t vdstx = vld1_u16(dst);
++
++        vdstx = vmul_u16(vdstx, vconst_3);
++        vdstx = vadd_u16(vdstx, vabo);
++        vdstx = vadd_u16(vdstx, vconst_2);
++        vdstx = vshr_n_u16(vdstx, 2);
++        vst1_u16(dst, vdstx);
++#else
          uint16x4_t vconst_3 = vdup_n_u16(3);
          uint16x4_t vconst_2 = vdup_n_u16(2);
 -        uint16x4_t vabo = { (uint16_t)(above[0]),
@@ -82,19 +93,6 @@ index 3d4b4769f..1a8a140f8 100644
 -                             (uint16_t)(dst[1]),
 -                             (uint16_t)(dst[2]),
 -                             (uint16_t)(dst[3]) };
-+        uint16x4_t vabo = vld1_u16(above);
-+        uint16x4_t vdstx = vld1_u16(dst);
-+
-         vdstx = vmul_u16(vdstx, vconst_3);
-         vdstx = vadd_u16(vdstx, vabo);
-         vdstx = vadd_u16(vdstx, vconst_2);
-         vdstx = vshr_n_u16(vdstx, 2);
--        for (int i = 0; i < 4; i++)
--            dst[i] = (pixel)(vdstx[i]);
-+        vst1_u16(dst, vdstx);
-+#else
-+        uint16x4_t vconst_3 = vdup_n_u16(3);
-+        uint16x4_t vconst_2 = vdup_n_u16(2);
 +
 +        uint8x8_t vabo_u8 = vdup_n_u8(0);
 +        vabo_u8 = vreinterpret_u8_u32(vld1_lane_u32((const uint32_t*)above, vreinterpret_u32_u8(vabo_u8), 0));
@@ -104,10 +102,12 @@ index 3d4b4769f..1a8a140f8 100644
 +        vdst_u8 = vreinterpret_u8_u32(vld1_lane_u32((const uint32_t*)dst, vreinterpret_u32_u8(vdst_u8), 0));
 +        uint16x4_t vdstx = vget_low_u16(vmovl_u8(vdst_u8));
 +
-+        vdstx = vmul_u16(vdstx, vconst_3);
-+        vdstx = vadd_u16(vdstx, vabo);
-+        vdstx = vadd_u16(vdstx, vconst_2);
-+        vdstx = vshr_n_u16(vdstx, 2);
+         vdstx = vmul_u16(vdstx, vconst_3);
+         vdstx = vadd_u16(vdstx, vabo);
+         vdstx = vadd_u16(vdstx, vconst_2);
+         vdstx = vshr_n_u16(vdstx, 2);
+-        for (int i = 0; i < 4; i++)
+-            dst[i] = (pixel)(vdstx[i]);
 +
 +        uint16x8_t vdst_comb = vcombine_u16(vdstx, vdup_n_u16(0));
 +        vst1_lane_u32((uint32_t *)dst, vreinterpret_u32_u8(vmovn_u16(vdst_comb)), 0);
@@ -115,8 +115,89 @@ index 3d4b4769f..1a8a140f8 100644
  
          dst += dststride;
          for (int y = 1; y < size; y++)
+@@ -621,22 +637,13 @@ void intra_pred_dc_neon(pixel* dst, intptr_t dstStride, const pixel* srcPix, int
+     case 8:
+     {
+         for (int i = 0; i < width; i += 8) {
+-            uint16x8_t spa = { (uint16_t)(srcPix[i + 1]),
+-                               (uint16_t)(srcPix[i + 2]),
+-                               (uint16_t)(srcPix[i + 3]),
+-                               (uint16_t)(srcPix[i + 4]),
+-                               (uint16_t)(srcPix[i + 5]),
+-                               (uint16_t)(srcPix[i + 6]),
+-                               (uint16_t)(srcPix[i + 7]),
+-                               (uint16_t)(srcPix[i + 8]) };
+-            uint16x8_t spb = { (uint16_t)(srcPix[2 * width + i + 1]),
+-                               (uint16_t)(srcPix[2 * width + i + 2]),
+-                               (uint16_t)(srcPix[2 * width + i + 3]),
+-                               (uint16_t)(srcPix[2 * width + i + 4]),
+-                               (uint16_t)(srcPix[2 * width + i + 5]),
+-                               (uint16_t)(srcPix[2 * width + i + 6]),
+-                               (uint16_t)(srcPix[2 * width + i + 7]),
+-                               (uint16_t)(srcPix[2 * width + i + 8]) };
++#if HIGH_BIT_DEPTH
++            uint16x8_t spa = vld1q_u16(srcPix + i + 1);
++            uint16x8_t spb = vld1q_u16(srcPix + 2 * width + i + 1);
++#else
++            uint16x8_t spa = vmovl_u8(vld1_u8((const uint8_t*)(srcPix + i + 1)));
++            uint16x8_t spb = vmovl_u8(vld1_u8((const uint8_t*)(srcPix + 2 * width + i + 1)));
++#endif
+             uint16x8_t vsp = vaddq_u16(spa, spb);
+             dcVal += vaddlvq_u16(vsp);
+         }
+@@ -645,27 +652,40 @@ void intra_pred_dc_neon(pixel* dst, intptr_t dstStride, const pixel* srcPix, int
+         for (k = 0; k < width; k++)
+             for (l = 0; l < width; l += 8) {
+                 uint16x8_t vdv = vdupq_n_u16((pixel)dcVal);
+-                for (int n = 0; n < 8; n++)
+-                    dst[k * dstStride + l + n] = (pixel)(vdv[n]);
++#if HIGH_BIT_DEPTH
++                vst1q_u16(dst + k * dstStride + l, vdv);
++#else
++                vst1_u8((uint8_t*)(dst + k * dstStride + l), vmovn_u16(vdv));
++#endif
+             }
+     }
+     break;
+     case 4:
+     {
+-        uint16x4_t spa = { (uint16_t)(srcPix[1]), (uint16_t)(srcPix[2]),
+-                           (uint16_t)(srcPix[3]), (uint16_t)(srcPix[4]) };
+-        uint16x4_t spb = { (uint16_t)(srcPix[2 * width + 1]),
+-                           (uint16_t)(srcPix[2 * width + 2]),
+-                           (uint16_t)(srcPix[2 * width + 3]),
+-                           (uint16_t)(srcPix[2 * width + 4]) };
++#if HIGH_BIT_DEPTH
++        uint16x4_t spa = vld1_u16(srcPix + 1);
++        uint16x4_t spb = vld1_u16(srcPix + 2 * width + 1);
++#else
++        uint8x8_t spa_u8 = vdup_n_u8(0);
++        spa_u8 = vreinterpret_u8_u32(vld1_lane_u32((const uint32_t*)(srcPix + 1), vreinterpret_u32_u8(spa_u8), 0));
++        uint16x4_t spa = vget_low_u16(vmovl_u8(spa_u8));
++
++        uint8x8_t spb_u8 = vdup_n_u8(0);
++        spb_u8 = vreinterpret_u8_u32(vld1_lane_u32((const uint32_t*)(srcPix + 2 * width + 1), vreinterpret_u32_u8(spb_u8), 0));
++        uint16x4_t spb = vget_low_u16(vmovl_u8(spb_u8));
++#endif
+         uint16x4_t vsp = vadd_u16(spa, spb);
+         dcVal += vaddlv_u16(vsp);
+
+         dcVal = dcVal / (width + width);
+         for (k = 0; k < width; k++) {
+             uint16x4_t vdv = vdup_n_u16((pixel)dcVal);
+-            for (int n = 0; n < 4; n++)
+-                dst[k * dstStride + n] = (pixel)(vdv[n]);
++#if HIGH_BIT_DEPTH
++            vst1_u16(dst + k * dstStride, vdv);
++#else
++            uint16x8_t vdv_comb = vcombine_u16(vdv, vdup_n_u16(0));
++            vst1_lane_u32((uint32_t*)(dst + k * dstStride), vreinterpret_u32_u8(vmovn_u16(vdv_comb)), 0);
++#endif
+         }
+     }
+     break;
 diff --git a/source/common/aarch64/intrapred-prim.h b/source/common/aarch64/intrapred-prim.h
-index 31da91dfa..9ee057b1e 100644
+index 31da91d..9ee057b 100644
 --- a/source/common/aarch64/intrapred-prim.h
 +++ b/source/common/aarch64/intrapred-prim.h
 @@ -1,6 +1,6 @@
@@ -127,5 +208,3 @@ index 31da91dfa..9ee057b1e 100644
  
  namespace X265_NS
  {
- 
-
