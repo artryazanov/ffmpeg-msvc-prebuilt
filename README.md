@@ -54,6 +54,10 @@ The files are packaged into **.zip** archives for each configuration, making it 
 - **GPL Builds**: Includes additional components like **x264** and **x265** encoders.
 - **LGPL Builds**: Excludes GPL-licensed components for more permissive licensing.
 
+### Acknowledgements
+
+This project is a fork of the [ffmpeg-msvc-prebuilt](https://github.com/System233/ffmpeg-msvc-prebuilt) project by **System233**. I have updated and enhanced the build system to support new configurations, but this work is built upon the solid foundation laid by the original author. For earlier releases and the original project history, please visit the [original releases page](https://github.com/System233/ffmpeg-msvc-prebuilt/releases).
+
 ### Included Dependencies
 
 All builds include the following libraries:
