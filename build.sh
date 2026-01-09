@@ -217,5 +217,11 @@ if [ "$BUILD_LICENSE" == "gpl" ]; then
 
 fi
 
+# Fix for MSVC: localtime_r/gmtime_r missing in libavfilter/textutils.c
+if [ -f "FFmpeg/libavfilter/textutils.c" ] && grep -q "localtime_r" "FFmpeg/libavfilter/textutils.c" && ! grep -q "localtime_s" "FFmpeg/libavfilter/textutils.c"; then
+    echo "Applying MSVC fix for textutils.c..."
+    apply-patch FFmpeg ffmpeg-textutils-msvc.patch
+fi
+
 ./build-ffmpeg.sh FFmpeg $FF_ARGS
 ./reprefix.sh
