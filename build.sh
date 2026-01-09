@@ -46,7 +46,9 @@ apply-patch() {
 }
 
 apply-patch zlib zlib.patch
-# apply-patch FFmpeg ffmpeg.patch
+if [ -f "FFmpeg/libavfilter/textutils.c" ] && ! grep -q 'include "libavutil/time_internal.h"' "FFmpeg/libavfilter/textutils.c"; then
+    apply-patch FFmpeg ffmpeg.patch
+fi
 apply-patch harfbuzz harfbuzz.patch
 
 ./build-make-dep.sh nv-codec-headers
@@ -215,12 +217,6 @@ if [ "$BUILD_LICENSE" == "gpl" ]; then
     INSTALL_TARGET=install-lib-${BUILD_TYPE} ./build-make-dep.sh x264 --enable-${BUILD_TYPE} $X264_ARGS
     add_ffargs "--enable-libx264"
 
-fi
-
-# Fix for MSVC: localtime_r/gmtime_r missing in libavfilter/textutils.c
-if [ -f "FFmpeg/libavfilter/textutils.c" ] && grep -q "localtime_r" "FFmpeg/libavfilter/textutils.c" && ! grep -q "localtime_s" "FFmpeg/libavfilter/textutils.c"; then
-    echo "Applying MSVC fix for textutils.c..."
-    apply-patch FFmpeg ffmpeg-textutils-msvc.patch
 fi
 
 ./build-ffmpeg.sh FFmpeg $FF_ARGS
