@@ -189,6 +189,7 @@ if [ "$BUILD_LICENSE" == "gpl" ]; then
     fi
     if [ "$BUILD_ARCH" == "arm64" ]; then
         apply-patch x265_git x265_git-arm64.patch
+        X265_ARGS="$X265_ARGS -DENABLE_ASSEMBLY=OFF"
     fi
     apply-patch x265_git x265_git-version.patch
 
