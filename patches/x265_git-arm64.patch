@@ -4,7 +4,7 @@ index 9f93b6e..65884e9 100755
 +++ b/source/CMakeLists.txt
 @@ -100,7 +100,9 @@ elseif(ARM64MATCH GREATER "-1")
      option(ENABLE_SVE2_BITPERM "Enable SVE2 BitPerm" ON)
-
+ 
      # Compiler flags for AArch64 extensions.
 -    set(AARCH64_NEON_FLAG "-march=armv8-a")
 +    if(NOT MSVC)
