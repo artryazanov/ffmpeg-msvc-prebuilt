@@ -31,7 +31,7 @@ jobs:
     needs: prepare
     strategy:
       matrix:
-        arch: [x86, amd64, arm, arm64]
+        arch: [arm64]
         type: [static, shared]
         license: [gpl, lgpl]
       fail-fast: false
