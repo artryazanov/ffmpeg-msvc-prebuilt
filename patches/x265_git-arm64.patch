@@ -247,3 +247,16 @@ index 31da91d..9ee057b 100644
  
  namespace X265_NS
  {
+diff --git a/source/common/CMakeLists.txt b/source/common/CMakeLists.txt
+index 100644..100644 100644
+--- a/source/common/CMakeLists.txt
++++ b/source/common/CMakeLists.txt
+@@ -126,7 +126,7 @@ if(ENABLE_ASSEMBLY AND (ARM64 OR CROSS_COMPILE_ARM64))
+     set(ARM_ASMS_SVE2_BITPERM "${A_SRCS_SVE2_BITPERM}" CACHE INTERNAL "Arm Assembly Sources that use the SVE2 BitPerm extension")
+     foreach(SRC ${C_SRCS_NEON})
+         set(ASM_PRIMITIVES ${ASM_PRIMITIVES} aarch64/${SRC})
+-        set_source_files_properties(aarch64/${SRC} PROPERTIES COMPILE_FLAGS ${AARCH64_NEON_FLAG})
++        set_source_files_properties(aarch64/${SRC} PROPERTIES COMPILE_FLAGS "${AARCH64_NEON_FLAG}")
+     endforeach()
+ 
+     if(CPU_HAS_NEON_DOTPROD)
