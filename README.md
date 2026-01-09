@@ -47,14 +47,7 @@ The files are packaged into **.zip** archives for each configuration, making it 
 - **amd64** (x86_64)
 - **x86** (32-bit)
 - **arm** (armv7l)
-
-> [!WARNING]
-> **ARM64 Support Unavailable**
->
-> Builds for the **arm64** architecture are currently not included in the release packages.
->
-> For users requiring **arm64** support, please refer to the releases available in the upstream repository:
-> [System233/ffmpeg-msvc-prebuilt](https://github.com/System233/ffmpeg-msvc-prebuilt/releases)
+- **arm64** (aarch64)
 
 ### Licensing Options
 
