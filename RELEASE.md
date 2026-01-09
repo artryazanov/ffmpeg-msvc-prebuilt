@@ -1,10 +1,14 @@
 This release contains FFmpeg builds, compiled with MSVC (Microsoft Visual C++) via GitHub Actions, and organized as follows:
 
 - **Variants**: Includes both **shared** and **static** builds.
-- **Architectures**: Each variant is available for **amd64**, **x86**, **arm**, and **arm64**.
+- **Architectures**: Each variant is available for **amd64**, **x86**, **arm** and **arm64**.
 - **Licenses**:
   - **GPL**: Includes GPL components such as the **x264** and **x265** encoders.
   - **LGPL**: Excludes GPL-licensed components.
+
+### Acknowledgements
+
+This project is a fork of the [ffmpeg-msvc-prebuilt](https://github.com/System233/ffmpeg-msvc-prebuilt) project by **System233**. I have updated and enhanced the build system to support new configurations, but this work is built upon the solid foundation laid by the original author. For earlier releases and the original project history, please visit the [original releases page](https://github.com/System233/ffmpeg-msvc-prebuilt/releases).
 
 #### Included Dependencies
 
