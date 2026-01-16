@@ -43,3 +43,6 @@ url = https://github.com/webmproject/libvpx.git
 [submodule "fribidi"]
 	path = fribidi
 	url = https://github.com/fribidi/fribidi.git
+[submodule "ffmpeg-v360-advanced"]
+	path = ffmpeg-v360-advanced
+	url = git@github.com:artryazanov/ffmpeg-v360-advanced.git
