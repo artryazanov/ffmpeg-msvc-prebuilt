@@ -2,13 +2,10 @@ diff --git a/libavfilter/v360.h b/libavfilter/v360.h
 index b3660c2..0dadc4d 100644
 --- a/libavfilter/v360.h
 +++ b/libavfilter/v360.h
-@@ -18,9 +18,7 @@
-  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
-  */
- 
--#ifndef AVFILTER_V360_H
--#define AVFILTER_V360_H
--#include "avfilter.h"
+@@ -21,6 +21,7 @@
+ #ifndef AVFILTER_V360_H
+ #define AVFILTER_V360_H
+ #include "avfilter.h"
 +#include "framesync.h"
  
  enum StereoFormats {
