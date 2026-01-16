@@ -39,12 +39,18 @@ diff --git a/libavfilter/vf_v360.c b/libavfilter/vf_v360.c
 index 1cfe408..0fb38ea 100644
 --- a/libavfilter/vf_v360.c
 +++ b/libavfilter/vf_v360.c
-@@ -44,6 +44,8 @@
+@@ -44,6 +44,14 @@
  #include "formats.h"
  #include "video.h"
  #include "v360.h"
 +#include "framesync.h"
++#include "internal.h"
++#include "libavutil/avstring.h"
++#include "libavutil/eval.h"
++#include "libavutil/mem.h"
 +#include <float.h>
++
++static int process_frame(FFFrameSync *fs);
  
  typedef struct ThreadData {
      AVFrame *in;
@@ -59,6 +65,11 @@ index 1cfe408..0fb38ea 100644
      { NULL }
  };
  
+@@ -255,3 +267,3 @@ static int query_formats(const AVFilterContext *ctx,
+     return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out,
+-                                            s->alpha ? alpha_pix_fmts : pix_fmts);
++                                            (const int *)(s->alpha ? alpha_pix_fmts : pix_fmts));
+ }
 @@ -4317,6 +4323,95 @@ static int config_output(AVFilterLink *outlink)
      int (*prepare_out)(AVFilterContext *ctx);
      int have_alpha;
