@@ -45,7 +45,7 @@ index b3660c2..ab740aa 100644
  
  void ff_v360_init(V360Context *s, int depth);
 diff --git a/libavfilter/vf_v360.c b/libavfilter/vf_v360.c
-index 1cfe408..b2a7e1e 100644
+index 1cfe408..654d657 100644
 --- a/libavfilter/vf_v360.c
 +++ b/libavfilter/vf_v360.c
 @@ -44,12 +44,24 @@
@@ -110,7 +110,7 @@ index 1cfe408..b2a7e1e 100644
      const int depth = desc->comp[0].depth;
      const int sizeof_mask = s->mask_size = (depth + 7) >> 3;
      float default_h_fov = 360.f;
-@@ -4317,6 +4337,170 @@ static int config_output(AVFilterLink *outlink)
+@@ -4317,6 +4337,179 @@ static int config_output(AVFilterLink *outlink)
      int (*prepare_out)(AVFilterContext *ctx);
      int have_alpha;
  
@@ -203,6 +203,15 @@ index 1cfe408..b2a7e1e 100644
 +            s->fs.time_base = AV_TIME_BASE_Q;
 +        s->fs.opaque = s;
 +
++        // Configure each input as a sync source.
++        for (int i = 0; i < s->nb_inputs; i++) {
++            FFFrameSyncIn *in = &s->fs.in[i];
++            in->time_base = ctx->inputs[i]->time_base;
++            in->sync   = 1;
++            in->before = EXT_STOP;
++            in->after  = EXT_STOP;
++        }
++
 +        s->remap_slice = depth <= 8 ? remap_rig_8bit_slice : remap_rig_16bit_slice;
 +
 +        // TILES Output Configuration
@@ -281,7 +290,7 @@ index 1cfe408..b2a7e1e 100644
      s->max_value = (1 << depth) - 1;
  
      switch (s->interp) {
-@@ -4595,6 +4779,12 @@ static int config_output(AVFilterLink *outlink)
+@@ -4595,6 +4788,12 @@ static int config_output(AVFilterLink *outlink)
          wf = w * 2.f;
          hf = h;
          break;
@@ -294,7 +303,7 @@ index 1cfe408..b2a7e1e 100644
      case EQUISOLID:
          s->in_transform = xyz_to_equisolid;
          err = prepare_equisolid_in(ctx);
-@@ -4930,6 +5120,185 @@ static void reset_rot(V360Context *s)
+@@ -4930,6 +5129,185 @@ static void reset_rot(V360Context *s)
      s->rot_quaternion[0][1] = s->rot_quaternion[0][2] = s->rot_quaternion[0][3] = 0.f;
  }
  
@@ -480,7 +489,7 @@ index 1cfe408..b2a7e1e 100644
  static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
                             char *res, int res_len, int flags)
  {
-@@ -4951,13 +5320,110 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
+@@ -4951,13 +5329,110 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
      return config_output(ctx->outputs[0]);
  }
  
@@ -591,7 +600,7 @@ index 1cfe408..b2a7e1e 100644
  }
  
  static av_cold void uninit(AVFilterContext *ctx)
-@@ -4977,15 +5443,15 @@ static av_cold void uninit(AVFilterContext *ctx)
+@@ -4977,15 +5452,15 @@ static av_cold void uninit(AVFilterContext *ctx)
      }
  
      av_freep(&s->slice_remap);
@@ -614,7 +623,7 @@ index 1cfe408..b2a7e1e 100644
  
  static const AVFilterPad outputs[] = {
      {
-@@ -4999,11 +5465,12 @@ const FFFilter ff_vf_v360 = {
+@@ -4999,11 +5474,12 @@ const FFFilter ff_vf_v360 = {
      .p.name        = "v360",
      .p.description = NULL_IF_CONFIG_SMALL("Convert 360 projection of video."),
      .p.priv_class  = &v360_class,
