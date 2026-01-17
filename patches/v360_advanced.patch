@@ -1,5 +1,5 @@
 diff --git a/libavfilter/v360.h b/libavfilter/v360.h
-index b3660c2..0dadc4d 100644
+index b3660c2..ab740aa 100644
 --- a/libavfilter/v360.h
 +++ b/libavfilter/v360.h
 @@ -21,6 +21,7 @@
@@ -10,7 +10,7 @@ index b3660c2..0dadc4d 100644
  
  enum StereoFormats {
      STEREO_2D,
-@@ -55,6 +53,7 @@ enum Projections {
+@@ -55,6 +56,7 @@ enum Projections {
      ORTHOGRAPHIC,
      OCTAHEDRON,
      CYLINDRICALEA,
@@ -18,7 +18,15 @@ index b3660c2..0dadc4d 100644
      NB_PROJECTIONS,
  };
  
-@@ -193,6 +192,16 @@ typedef struct V360Context {
+@@ -174,6 +176,7 @@ typedef struct V360Context {
+     int mask_size;
+     int max_value;
+     int nb_threads;
++    const struct AVPixFmtDescriptor *desc;
+ 
+     SliceXYRemap *slice_remap;
+     unsigned map[AV_VIDEO_MAX_PLANES];
+@@ -193,6 +196,17 @@ typedef struct V360Context {
  
      void (*remap_line)(uint8_t *dst, int width, const uint8_t *const src, ptrdiff_t in_linesize,
                         const int16_t *const u, const int16_t *const v, const int16_t *const ker);
@@ -28,6 +36,7 @@ index b3660c2..0dadc4d 100644
 +    char *input_config_str;     // Raw string from user: "p0 y0 p1 y1..."
 +    float *input_angles;        // Parsed array: [pitch0, yaw0, pitch1, yaw1...]
 +    float *input_rot;           // Pre-calculated rotation matrices (9 floats per input)
++    AVFrame **in_frames;        // Pre-allocated array of input frame pointers
 +    float rig_fov;              // User-specified FOV (horizontal/vertical)
 +    float blend_width;          // Soft edge blending width (0.0 - 0.5)
 +
@@ -36,10 +45,10 @@ index b3660c2..0dadc4d 100644
  
  void ff_v360_init(V360Context *s, int depth);
 diff --git a/libavfilter/vf_v360.c b/libavfilter/vf_v360.c
-index 1cfe408..0fb38ea 100644
+index 1cfe408..ce705ab 100644
 --- a/libavfilter/vf_v360.c
 +++ b/libavfilter/vf_v360.c
-@@ -44,6 +44,13 @@
+@@ -44,12 +44,24 @@
  #include "formats.h"
  #include "video.h"
  #include "v360.h"
@@ -53,23 +62,55 @@ index 1cfe408..0fb38ea 100644
  
  typedef struct ThreadData {
      AVFrame *in;
-@@ -167,6 +169,10 @@ static const AVOption v360_options[] = {
+     AVFrame *out;
+ } ThreadData;
+ 
++typedef struct RigThreadData {
++    AVFrame **in_frames;
++    AVFrame *out_frame;
++} RigThreadData;
++
+ #define OFFSET(x) offsetof(V360Context, x)
+ #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+ #define TFLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
+@@ -167,6 +179,10 @@ static const AVOption v360_options[] = {
      {  "v_offset", "output vertical off-axis offset",  OFFSET(v_offset), AV_OPT_TYPE_FLOAT,{.dbl=0.f},       -1.f,                 1.f,TFLAGS, .unit = "v_offset"},
      {"alpha_mask", "build mask in alpha plane",      OFFSET(alpha), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, .unit = "alpha"},
      { "reset_rot", "reset rotation",             OFFSET(reset_rot), AV_OPT_TYPE_BOOL,   {.i64=0},              -1,                   1,TFLAGS, .unit = "reset_rot"},
 +    { "cam_angles", "set list of input camera angles (pitch yaw...)", OFFSET(input_config_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
-+    { "rig_fov", "set field of view for rig inputs", OFFSET(rig_fov), AV_OPT_TYPE_FLOAT, {.dbl = 90.0}, 1.0, 360.0, FLAGS },
++    { "rig_fov", "set field of view for rig inputs", OFFSET(rig_fov), AV_OPT_TYPE_FLOAT, {.dbl = 90.0}, 1.0, 179.0, FLAGS },
 +    { "blend_width", "set blending overlap width (0.0-0.5)", OFFSET(blend_width), AV_OPT_TYPE_FLOAT, {.dbl = 0.05}, 0.0, 0.5, FLAGS },
 +    { "tiles", "tiled rig", 0, AV_OPT_TYPE_CONST, {.i64=TILES}, 0, 0, FLAGS, .unit = "in" },
      { NULL }
  };
  
-@@ -255,3 +267,3 @@ static int query_formats(const AVFilterContext *ctx,
+@@ -253,7 +269,7 @@ static int query_formats(const AVFilterContext *ctx,
+     };
+ 
      return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out,
 -                                            s->alpha ? alpha_pix_fmts : pix_fmts);
 +                                            (const int *)(s->alpha ? alpha_pix_fmts : pix_fmts));
  }
-@@ -4317,6 +4323,95 @@ static int config_output(AVFilterLink *outlink)
+ 
+ #define DEFINE_REMAP1_LINE(bits, div)                                                    \
+@@ -4295,12 +4311,16 @@ static int v360_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+     return 0;
+ }
+ 
++static int remap_rig_8bit_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
++static int remap_rig_16bit_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
++
+ static int config_output(AVFilterLink *outlink)
+ {
+     AVFilterContext *ctx = outlink->src;
+     AVFilterLink *inlink = ctx->inputs[0];
+     V360Context *s = ctx->priv;
+     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
++    s->desc = desc;
+     const int depth = desc->comp[0].depth;
+     const int sizeof_mask = s->mask_size = (depth + 7) >> 3;
+     float default_h_fov = 360.f;
+@@ -4317,6 +4337,119 @@ static int config_output(AVFilterLink *outlink)
      int (*prepare_out)(AVFilterContext *ctx);
      int have_alpha;
  
@@ -156,24 +197,56 @@ index 1cfe408..0fb38ea 100644
 +    
 +        // Config Framesync
 +        s->fs.on_event = process_frame;
-+        s->fs.time_base = outlink->time_base;
++        if (ctx->inputs[0]->time_base.num > 0 && ctx->inputs[0]->time_base.den > 0)
++            s->fs.time_base = ctx->inputs[0]->time_base;
++        else
++            s->fs.time_base = AV_TIME_BASE_Q;
 +        s->fs.opaque = s;
++
++        s->remap_slice = depth <= 8 ? remap_rig_8bit_slice : remap_rig_16bit_slice;
++
++        // TILES Output Configuration
++        outlink->w = s->w > 0 ? s->w : inlink->w;
++        outlink->h = s->h > 0 ? s->h : inlink->h;
++        outlink->time_base = s->fs.time_base;
++
++        s->max_value = (1 << depth) - 1;
++        s->nb_planes = av_pix_fmt_count_planes(outlink->format);
++        s->nb_threads = ff_filter_get_nb_threads(ctx);
++        s->in_width = inlink->w;
++        s->in_height = inlink->h;
++        s->width = outlink->w;
++        s->height = outlink->h;
++
++        set_dimensions(s->inplanewidth, s->inplaneheight, inlink->w, inlink->h, desc);
++        set_dimensions(s->planewidth, s->planeheight, outlink->w, outlink->h, desc);
++
 +        if ((err = ff_framesync_configure(&s->fs)) < 0)
 +            return err;
++
++        return 0;
 +    }
 +
      s->max_value = (1 << depth) - 1;
  
      switch (s->interp) {
-@@ -4930,6 +5025,188 @@ static void reset_rot(V360Context *s)
+@@ -4595,6 +4728,12 @@ static int config_output(AVFilterLink *outlink)
+         wf = w * 2.f;
+         hf = h;
+         break;
++    case TILES:
++        // Input preparation is handled in process_frame / framesync
++        err = 0;
++        wf = w;
++        hf = h;
++        break;
+     case EQUISOLID:
+         s->in_transform = xyz_to_equisolid;
+         err = prepare_equisolid_in(ctx);
+@@ -4930,6 +5069,185 @@ static void reset_rot(V360Context *s)
      s->rot_quaternion[0][1] = s->rot_quaternion[0][2] = s->rot_quaternion[0][3] = 0.f;
  }
  
-+typedef struct RigThreadData {
-+    AVFrame **in_frames;
-+    AVFrame *out_frame;
-+} RigThreadData;
-+
 +static inline float get_weight(float d, float delta) {
 +    float t = av_clipf(d / delta, 0.0f, 1.0f);
 +    return t * t * (3.0f - 2.0f * t);
@@ -269,8 +342,12 @@ index 1cfe408..0fb38ea 100644
 +                if (acc_w > 0) { \
 +                    WRITE_PIXEL_##bits(out, plane, i, j, acc_val / acc_w); \
 +                } else { \
-+                    if (plane > 0) WRITE_PIXEL_##bits(out, plane, i, j, 0.5f); \
-+                    else WRITE_PIXEL_##bits(out, plane, i, j, 0.0f); \
++                    if (s->desc->flags & AV_PIX_FMT_FLAG_RGB) { \
++                        WRITE_PIXEL_##bits(out, plane, i, j, 0.0f); \
++                    } else { \
++                        if (plane > 0) WRITE_PIXEL_##bits(out, plane, i, j, 0.5f); \
++                        else WRITE_PIXEL_##bits(out, plane, i, j, 0.0f); \
++                    } \
 +                } \
 +            } \
 +         } \
@@ -300,8 +377,7 @@ index 1cfe408..0fb38ea 100644
 +    }
 +    out_frame->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
 +
-+    rtd.in_frames = av_calloc(s->nb_inputs, sizeof(AVFrame*));
-+    if (!rtd.in_frames) { av_frame_free(&out_frame); return AVERROR(ENOMEM); }
++    rtd.in_frames = s->in_frames;
 +    rtd.out_frame = out_frame;
 +
 +    for (i = 0; i < s->nb_inputs; i++) {
@@ -313,7 +389,6 @@ index 1cfe408..0fb38ea 100644
 +    else
 +        ff_filter_execute(ctx, remap_rig_8bit_slice, &rtd, NULL, FFMIN(s->height, s->nb_threads));
 +
-+    av_free(rtd.in_frames);
 +    return ff_filter_frame(outlink, out_frame);
 +}
 +
@@ -354,7 +429,7 @@ index 1cfe408..0fb38ea 100644
  static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
                             char *res, int res_len, int flags)
  {
-@@ -4951,12 +5228,86 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
+@@ -4951,13 +5269,110 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
      return config_output(ctx->outputs[0]);
  }
  
@@ -391,9 +466,17 @@ index 1cfe408..0fb38ea 100644
 +    if (!s->input_angles) return AVERROR(ENOMEM);
 +    
 +    s->input_rot = av_calloc(s->nb_inputs * 9, sizeof(float));
-+    if (!s->input_rot) return AVERROR(ENOMEM);
++    if (!s->input_rot) {
++        av_freep(&s->input_angles);
++        return AVERROR(ENOMEM);
++    }
 +    
 +    p_copy = av_strdup(s->input_config_str);
++    if (!p_copy) {
++        av_freep(&s->input_angles);
++        av_freep(&s->input_rot);
++        return AVERROR(ENOMEM);
++    }
 +    ptr = NULL;
 +    i = 0;
 +    arg = av_strtok(p_copy, " ", &ptr);
@@ -416,18 +499,27 @@ index 1cfe408..0fb38ea 100644
 +    if (s->in == TILES) {
 +        if ((ret = parse_rig_angles(ctx)) < 0)
 +            return ret;
-+            
++
++        s->in_frames = av_calloc(s->nb_inputs, sizeof(*s->in_frames));
++        if (!s->in_frames) {
++            ret = AVERROR(ENOMEM);
++            goto fail;
++        }
++
 +        for (int i = 0; i < s->nb_inputs; i++) {
 +            AVFilterPad pad = { 0 };
 +            pad.type = AVMEDIA_TYPE_VIDEO;
 +            pad.name = av_asprintf("in%d", i);
-+            if (!pad.name) return AVERROR(ENOMEM);
++            if (!pad.name) {
++                ret = AVERROR(ENOMEM);
++                goto fail;
++            }
 +            ret = ff_append_inpad_free_name(ctx, &pad);
-+            if (ret < 0) return ret;
++            if (ret < 0) goto fail;
 +        }
-+        
++
 +        if ((ret = ff_framesync_init(&s->fs, ctx, s->nb_inputs)) < 0)
-+            return ret;
++            goto fail;
 +    } else {
 +        AVFilterPad pad = { 0 };
 +        pad.type = AVMEDIA_TYPE_VIDEO;
@@ -439,9 +531,16 @@ index 1cfe408..0fb38ea 100644
 +    }
 +
      return 0;
++
++fail:
++    av_freep(&s->input_angles);
++    av_freep(&s->input_rot);
++    av_freep(&s->in_frames);
++    return ret;
  }
  
-@@ -4977,6 +5328,12 @@ static av_cold void uninit(AVFilterContext *ctx)
+ static av_cold void uninit(AVFilterContext *ctx)
+@@ -4977,15 +5392,15 @@ static av_cold void uninit(AVFilterContext *ctx)
      }
  
      av_freep(&s->slice_remap);
@@ -451,10 +550,20 @@ index 1cfe408..0fb38ea 100644
 +
 +    av_freep(&s->input_angles);
 +    av_freep(&s->input_rot);
++    av_freep(&s->in_frames);
  }
  
- static const AVFilterPad inputs[] = {
-@@ -4999,11 +5356,11 @@ const FFFilter ff_vf_v360 = {
+-static const AVFilterPad inputs[] = {
+-    {
+-        .name         = "default",
+-        .type         = AVMEDIA_TYPE_VIDEO,
+-        .filter_frame = filter_frame,
+-    },
+-};
+ 
+ static const AVFilterPad outputs[] = {
+     {
+@@ -4999,11 +5414,12 @@ const FFFilter ff_vf_v360 = {
      .p.name        = "v360",
      .p.description = NULL_IF_CONFIG_SMALL("Convert 360 projection of video."),
      .p.priv_class  = &v360_class,
@@ -465,6 +574,7 @@ index 1cfe408..0fb38ea 100644
      .uninit        = uninit,
 -    FILTER_INPUTS(inputs),
 +    .activate      = activate,
++    FILTER_INPUTS(NULL),
      FILTER_OUTPUTS(outputs),
      FILTER_QUERY_FUNC2(query_formats),
      .process_command = process_command,
