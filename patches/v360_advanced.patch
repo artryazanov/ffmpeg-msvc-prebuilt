@@ -45,7 +45,7 @@ index b3660c2..ab740aa 100644
  
  void ff_v360_init(V360Context *s, int depth);
 diff --git a/libavfilter/vf_v360.c b/libavfilter/vf_v360.c
-index 1cfe408..ce705ab 100644
+index 1cfe408..b2a7e1e 100644
 --- a/libavfilter/vf_v360.c
 +++ b/libavfilter/vf_v360.c
 @@ -44,12 +44,24 @@
@@ -110,7 +110,7 @@ index 1cfe408..ce705ab 100644
      const int depth = desc->comp[0].depth;
      const int sizeof_mask = s->mask_size = (depth + 7) >> 3;
      float default_h_fov = 360.f;
-@@ -4317,6 +4337,119 @@ static int config_output(AVFilterLink *outlink)
+@@ -4317,6 +4337,170 @@ static int config_output(AVFilterLink *outlink)
      int (*prepare_out)(AVFilterContext *ctx);
      int have_alpha;
  
@@ -215,22 +215,73 @@ index 1cfe408..ce705ab 100644
 +        s->nb_threads = ff_filter_get_nb_threads(ctx);
 +        s->in_width = inlink->w;
 +        s->in_height = inlink->h;
-+        s->width = outlink->w;
-+        s->height = outlink->h;
++        // s->width and s->height are set below, but are needed now for switch(s->out)
++        // If they are 0, take from outlink (as it was above)
++        int w = outlink->w;
++        int h = outlink->h;
++        
++        // --- IMPORTANT: Output Transform Initialization (Copied from the bottom of the function) ---
++        // Without this block s->out_transform remains NULL
++        float wf = w, hf = h;
++        int (*prepare_out)(AVFilterContext *ctx) = NULL;
++        
++        switch (s->out) {
++        case EQUIRECTANGULAR:
++            s->out_transform = equirect_to_xyz;
++            prepare_out = prepare_equirect_out;
++            break;
++        case CUBEMAP_3_2:
++            s->out_transform = cube3x2_to_xyz;
++            prepare_out = prepare_cube_out;
++            w = lrintf(wf / 4.f * 3.f);
++            break;
++        // ... (other cases can be added if planned, but the first one is sufficient for Equirectangular)
++        default:
++             // For safety, copy necessary cases or use Fallback
++            if (s->out == EQUIRECTANGULAR) {
++                 s->out_transform = equirect_to_xyz;
++                 prepare_out = prepare_equirect_out;
++            } else {
++                av_log(ctx, AV_LOG_ERROR, "Output format not fully supported in TILES mode implementation yet.\n");
++                return AVERROR(EINVAL);
++            }
++        }
++        
++        // Call to prepare_out is mandatory for flat_range (FOV) initialization
++        if (prepare_out) {
++            // Ensure FOV is set
++            if (s->h_fov == 0.f) s->h_fov = 360.f; // Default for Equirect
++            if (s->v_fov == 0.f) s->v_fov = 180.f;
++            
++            if ((err = prepare_out(ctx)) < 0) return err;
++        }
++        
++        // Calculate global rotation (Yaw/Pitch/Roll of the output itself)
++        // Copy call from the end of the function
++        calculate_rotation(s->yaw, s->pitch, s->roll, s->rot_quaternion, s->rotation_order);
++        set_mirror_modifier(s->h_flip, s->v_flip, s->d_flip, s->output_mirror_modifier);
++        // ---------------------------------------------------------------------------------
++
++        // Update dimensions if projection changed them
++        s->width = w;
++        s->height = h;
++        outlink->w = w;
++        outlink->h = h;
 +
 +        set_dimensions(s->inplanewidth, s->inplaneheight, inlink->w, inlink->h, desc);
 +        set_dimensions(s->planewidth, s->planeheight, outlink->w, outlink->h, desc);
 +
 +        if ((err = ff_framesync_configure(&s->fs)) < 0)
 +            return err;
-+
++        
++        // Now it is safe to return, everything is initialized
 +        return 0;
 +    }
 +
      s->max_value = (1 << depth) - 1;
  
      switch (s->interp) {
-@@ -4595,6 +4728,12 @@ static int config_output(AVFilterLink *outlink)
+@@ -4595,6 +4779,12 @@ static int config_output(AVFilterLink *outlink)
          wf = w * 2.f;
          hf = h;
          break;
@@ -243,7 +294,7 @@ index 1cfe408..ce705ab 100644
      case EQUISOLID:
          s->in_transform = xyz_to_equisolid;
          err = prepare_equisolid_in(ctx);
-@@ -4930,6 +5069,185 @@ static void reset_rot(V360Context *s)
+@@ -4930,6 +5120,185 @@ static void reset_rot(V360Context *s)
      s->rot_quaternion[0][1] = s->rot_quaternion[0][2] = s->rot_quaternion[0][3] = 0.f;
  }
  
@@ -429,7 +480,7 @@ index 1cfe408..ce705ab 100644
  static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
                             char *res, int res_len, int flags)
  {
-@@ -4951,13 +5269,110 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
+@@ -4951,13 +5320,110 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
      return config_output(ctx->outputs[0]);
  }
  
@@ -540,7 +591,7 @@ index 1cfe408..ce705ab 100644
  }
  
  static av_cold void uninit(AVFilterContext *ctx)
-@@ -4977,15 +5392,15 @@ static av_cold void uninit(AVFilterContext *ctx)
+@@ -4977,15 +5443,15 @@ static av_cold void uninit(AVFilterContext *ctx)
      }
  
      av_freep(&s->slice_remap);
@@ -563,7 +614,7 @@ index 1cfe408..ce705ab 100644
  
  static const AVFilterPad outputs[] = {
      {
-@@ -4999,11 +5414,12 @@ const FFFilter ff_vf_v360 = {
+@@ -4999,11 +5465,12 @@ const FFFilter ff_vf_v360 = {
      .p.name        = "v360",
      .p.description = NULL_IF_CONFIG_SMALL("Convert 360 projection of video."),
      .p.priv_class  = &v360_class,
