@@ -1,0 +1,231 @@
+diff --git a/libavfilter/vf_hwupload.c b/libavfilter/vf_hwupload.c
+index 6aafac4d4..45e507784 100644
+--- a/libavfilter/vf_hwupload.c
++++ b/libavfilter/vf_hwupload.c
+@@ -85,7 +85,7 @@ static int hwupload_query_formats(const AVFilterContext *avctx,
+     input_pix_fmts  = constraints->valid_sw_formats;
+     output_pix_fmts = constraints->valid_hw_formats;
+
+-    input_formats = ff_make_format_list(output_pix_fmts);
++    input_formats = ff_make_format_list((const int *)output_pix_fmts);
+     if (!input_formats) {
+         err = AVERROR(ENOMEM);
+         goto fail;
+@@ -99,7 +99,7 @@ static int hwupload_query_formats(const AVFilterContext *avctx,
+     }
+
+     if ((err = ff_formats_ref(input_formats, &cfg_in[0]->formats)) < 0 ||
+-        (err = ff_formats_ref(ff_make_format_list(output_pix_fmts),
++        (err = ff_formats_ref(ff_make_format_list((const int *)output_pix_fmts),
+                               &cfg_out[0]->formats)) < 0)
+         goto fail;
+
+diff --git a/libavfilter/vf_hwupload_cuda.c b/libavfilter/vf_hwupload_cuda.c
+index 34f959ca5..5d5355e58 100644
+--- a/libavfilter/vf_hwupload_cuda.c
++++ b/libavfilter/vf_hwupload_cuda.c
+@@ -70,14 +70,14 @@ static int cudaupload_query_formats(const AVFilterContext *ctx,
+     static const enum AVPixelFormat output_pix_fmts[] = {
+         AV_PIX_FMT_CUDA, AV_PIX_FMT_NONE,
+     };
+-    AVFilterFormats *in_fmts  = ff_make_format_list(input_pix_fmts);
++    AVFilterFormats *in_fmts  = ff_make_format_list((const int *)input_pix_fmts);
+     AVFilterFormats *out_fmts;
+
+     ret = ff_formats_ref(in_fmts, &cfg_in[0]->formats);
+     if (ret < 0)
+         return ret;
+
+-    out_fmts = ff_make_format_list(output_pix_fmts);
++    out_fmts = ff_make_format_list((const int *)output_pix_fmts);
+
+     ret = ff_formats_ref(out_fmts, &cfg_out[0]->formats);
+     if (ret < 0)
+diff --git a/libavfilter/vf_lut.c b/libavfilter/vf_lut.c
+index d15fb85c4..ad06fc388 100644
+--- a/libavfilter/vf_lut.c
++++ b/libavfilter/vf_lut.c
+@@ -154,7 +154,7 @@ static int query_formats(const AVFilterContext *ctx,
+     const enum AVPixelFormat *pix_fmts = s->is_rgb ? rgb_pix_fmts :
+                                                      s->is_yuv ? yuv_pix_fmts :
+                                                                  all_pix_fmts;
+-    return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, pix_fmts);
++    return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, (const int *)pix_fmts);
+ }
+
+ /**
+diff --git a/libavfilter/vf_lut2.c b/libavfilter/vf_lut2.c
+index a37c0db94..466b69025 100644
+--- a/libavfilter/vf_lut2.c
++++ b/libavfilter/vf_lut2.c
+@@ -180,9 +180,9 @@ static int query_formats(const AVFilterContext *ctx,
+     int ret;
+
+     if (s->tlut2 || !s->odepth)
+-        return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, all_pix_fmts);
++        return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, (const int *)all_pix_fmts);
+
+-    ret = ff_formats_ref(ff_make_format_list(all_pix_fmts), &cfg_in[0]->formats);
++    ret = ff_formats_ref(ff_make_format_list((const int *)all_pix_fmts), &cfg_in[0]->formats);
+     if (ret < 0)
+         return ret;
+
+@@ -196,7 +196,7 @@ static int query_formats(const AVFilterContext *ctx,
+     default: av_assert0(0);
+     }
+
+-    return ff_formats_ref(ff_make_format_list(pix_fmts), &cfg_out[0]->formats);
++    return ff_formats_ref(ff_make_format_list((const int *)pix_fmts), &cfg_out[0]->formats);
+ }
+
+ static int config_inputx(AVFilterLink *inlink)
+diff --git a/libavfilter/vf_overlay.c b/libavfilter/vf_overlay.c
+index 9149d061b..dadfcc848 100644
+--- a/libavfilter/vf_overlay.c
++++ b/libavfilter/vf_overlay.c
+@@ -274,17 +274,17 @@ static int query_formats(const AVFilterContext *ctx,
+         overlay_formats = overlay_pix_fmts_gbrp;
+         break;
+     case OVERLAY_FORMAT_AUTO:
+-        return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, alpha_pix_fmts);
++        return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, (const int *)alpha_pix_fmts);
+     default:
+         av_assert0(0);
+     }
+
+-    formats = ff_make_format_list(main_formats);
++    formats = ff_make_format_list((const int *)main_formats);
+     if ((ret = ff_formats_ref(formats, &cfg_in[MAIN]->formats)) < 0 ||
+         (ret = ff_formats_ref(formats, &cfg_out[MAIN]->formats)) < 0)
+         return ret;
+
+-    return ff_formats_ref(ff_make_format_list(overlay_formats),
++    return ff_formats_ref(ff_make_format_list((const int *)overlay_formats),
+                           &cfg_in[OVERLAY]->formats);
+ }
+
+diff --git a/libavfilter/vf_palettegen.c b/libavfilter/vf_palettegen.c
+index 2012e987e..d1eaa5351 100644
+--- a/libavfilter/vf_palettegen.c
++++ b/libavfilter/vf_palettegen.c
+@@ -108,9 +108,9 @@ static int query_formats(const AVFilterContext *ctx,
+     static const enum AVPixelFormat out_fmts[] = {AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE};
+     int ret;
+
+-    if ((ret = ff_formats_ref(ff_make_format_list(in_fmts) , &cfg_in[0]->formats)) < 0)
++    if ((ret = ff_formats_ref(ff_make_format_list((const int *)in_fmts) , &cfg_in[0]->formats)) < 0)
+         return ret;
+-    if ((ret = ff_formats_ref(ff_make_format_list(out_fmts), &cfg_out[0]->formats)) < 0)
++    if ((ret = ff_formats_ref(ff_make_format_list((const int *)out_fmts), &cfg_out[0]->formats)) < 0)
+         return ret;
+     return 0;
+ }
+diff --git a/libavfilter/vf_paletteuse.c b/libavfilter/vf_paletteuse.c
+index 72711f96e..9894e5694 100644
+--- a/libavfilter/vf_paletteuse.c
++++ b/libavfilter/vf_paletteuse.c
+@@ -144,11 +144,11 @@ static int query_formats(const AVFilterContext *ctx,
+     static const enum AVPixelFormat inpal_fmts[] = {AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE};
+     static const enum AVPixelFormat out_fmts[]   = {AV_PIX_FMT_PAL8,  AV_PIX_FMT_NONE};
+     int ret;
+-    if ((ret = ff_formats_ref(ff_make_format_list(in_fmts),
++    if ((ret = ff_formats_ref(ff_make_format_list((const int *)in_fmts),
+                               &cfg_in[0]->formats)) < 0 ||
+-        (ret = ff_formats_ref(ff_make_format_list(inpal_fmts),
++        (ret = ff_formats_ref(ff_make_format_list((const int *)inpal_fmts),
+                               &cfg_in[1]->formats)) < 0 ||
+-        (ret = ff_formats_ref(ff_make_format_list(out_fmts),
++        (ret = ff_formats_ref(ff_make_format_list((const int *)out_fmts),
+                               &cfg_out[0]->formats)) < 0)
+         return ret;
+     return 0;
+diff --git a/libavfilter/vf_premultiply.c b/libavfilter/vf_premultiply.c
+index 9b4fc39cc..512452de4 100644
+--- a/libavfilter/vf_premultiply.c
++++ b/libavfilter/vf_premultiply.c
+@@ -92,7 +92,7 @@ static int query_formats(const AVFilterContext *ctx,
+     };
+
+     ret = ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out,
+-                                           s->inplace ? alpha_pix_fmts : no_alpha_pix_fmts);
++                                           (const int *)(s->inplace ? alpha_pix_fmts : no_alpha_pix_fmts));
+     if (ret < 0)
+         return ret;
+
+diff --git a/libavfilter/vf_remap.c b/libavfilter/vf_remap.c
+index 8146159d9..d5ba89e20 100644
+--- a/libavfilter/vf_remap.c
++++ b/libavfilter/vf_remap.c
+@@ -117,12 +117,12 @@ static int query_formats(const AVFilterContext *ctx,
+     AVFilterFormats *pix_formats = NULL, *map_formats = NULL;
+     int ret;
+
+-    pix_formats = ff_make_format_list(s->format ? gray_pix_fmts : pix_fmts);
++    pix_formats = ff_make_format_list((const int *)(s->format ? gray_pix_fmts : pix_fmts));
+     if ((ret = ff_formats_ref(pix_formats, &cfg_in[0]->formats)) < 0 ||
+         (ret = ff_formats_ref(pix_formats, &cfg_out[0]->formats)) < 0)
+         return ret;
+
+-    map_formats = ff_make_format_list(map_fmts);
++    map_formats = ff_make_format_list((const int *)map_fmts);
+     if ((ret = ff_formats_ref(map_formats, &cfg_in[1]->formats)) < 0)
+         return ret;
+     return ff_formats_ref(map_formats, &cfg_in[2]->formats);
+diff --git a/libavfilter/vf_showpalette.c b/libavfilter/vf_showpalette.c
+index 847b448f9..2da404b19 100644
+--- a/libavfilter/vf_showpalette.c
++++ b/libavfilter/vf_showpalette.c
+@@ -47,12 +47,12 @@ static int query_formats(const AVFilterContext *ctx,
+ {
+     static const enum AVPixelFormat in_fmts[]  = {AV_PIX_FMT_PAL8,  AV_PIX_FMT_NONE};
+     static const enum AVPixelFormat out_fmts[] = {AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE};
+-    int ret = ff_formats_ref(ff_make_format_list(in_fmts),
++    int ret = ff_formats_ref(ff_make_format_list((const int *)in_fmts),
+                              &cfg_in[0]->formats);
+     if (ret < 0)
+         return ret;
+
+-    return ff_formats_ref(ff_make_format_list(out_fmts),
++    return ff_formats_ref(ff_make_format_list((const int *)out_fmts),
+                           &cfg_out[0]->formats);
+ }
+
+diff --git a/libavfilter/vf_stereo3d.c b/libavfilter/vf_stereo3d.c
+index d5d4cc170..52e586aef 100644
+--- a/libavfilter/vf_stereo3d.c
++++ b/libavfilter/vf_stereo3d.c
+@@ -307,7 +307,7 @@ static int query_formats(const AVFilterContext *ctx,
+         pix_fmts = other_pix_fmts;
+     }
+
+-    return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, pix_fmts);
++    return ff_set_common_formats_from_list2(ctx, cfg_in, cfg_out, (const int *)pix_fmts);
+ }
+
+ static inline uint8_t ana_convert(const int *coeff, const uint8_t *left, const uint8_t *right)
+diff --git a/libavfilter/vf_thumbnail.c b/libavfilter/vf_thumbnail.c
+index 728880e10..08dad81f7 100644
+--- a/libavfilter/vf_thumbnail.c
++++ b/libavfilter/vf_thumbnail.c
+@@ -365,7 +365,7 @@ static int query_formats(const AVFilterContext *ctx,
+     const AVPixFmtDescriptor *desc = NULL;
+     AVFilterFormats *formats;
+
+-    formats = ff_make_format_list(packed_rgb_fmts);
++    formats = ff_make_format_list((const int *)packed_rgb_fmts);
+     if (!formats)
+         return AVERROR(ENOMEM);
+
+diff --git a/libavfilter/vf_tinterlace.c b/libavfilter/vf_tinterlace.c
+index 59fe82abe..cea094a7b 100644
+--- a/libavfilter/vf_tinterlace.c
++++ b/libavfilter/vf_tinterlace.c
+@@ -444,7 +444,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
+         out->sample_aspect_ratio = av_mul_q(cur->sample_aspect_ratio, av_make_q(2, 1));
+
+         field = (1 + l->frame_count_in) & 1 ? FIELD_UPPER : FIELD_LOWER;
+-        full = out->color_range == AVCOL_RANGE_JPEG || ff_fmt_is_in(out->format, full_scale_yuvj_pix_fmts);
++        full = out->color_range == AVCOL_RANGE_JPEG || ff_fmt_is_in(out->format, (const int *)full_scale_yuvj_pix_fmts);
+         /* copy upper and lower fields */
+         copy_picture_field(tinterlace, out->data, out->linesize,
+                            (const uint8_t **)cur->data, cur->linesize,
