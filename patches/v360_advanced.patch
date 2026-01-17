@@ -39,12 +39,11 @@ diff --git a/libavfilter/vf_v360.c b/libavfilter/vf_v360.c
 index 1cfe408..0fb38ea 100644
 --- a/libavfilter/vf_v360.c
 +++ b/libavfilter/vf_v360.c
-@@ -44,6 +44,14 @@
+@@ -44,6 +44,13 @@
  #include "formats.h"
  #include "video.h"
  #include "v360.h"
 +#include "framesync.h"
-+#include "internal.h"
 +#include "libavutil/avstring.h"
 +#include "libavutil/eval.h"
 +#include "libavutil/mem.h"
