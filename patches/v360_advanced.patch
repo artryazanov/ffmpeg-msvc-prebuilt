@@ -45,7 +45,7 @@ index b3660c2..ab740aa 100644
  
  void ff_v360_init(V360Context *s, int depth);
 diff --git a/libavfilter/vf_v360.c b/libavfilter/vf_v360.c
-index 1cfe408..654d657 100644
+index 1cfe408..3aed852 100644
 --- a/libavfilter/vf_v360.c
 +++ b/libavfilter/vf_v360.c
 @@ -44,12 +44,24 @@
@@ -303,7 +303,7 @@ index 1cfe408..654d657 100644
      case EQUISOLID:
          s->in_transform = xyz_to_equisolid;
          err = prepare_equisolid_in(ctx);
-@@ -4930,6 +5129,185 @@ static void reset_rot(V360Context *s)
+@@ -4930,6 +5129,186 @@ static void reset_rot(V360Context *s)
      s->rot_quaternion[0][1] = s->rot_quaternion[0][2] = s->rot_quaternion[0][3] = 0.f;
  }
  
@@ -369,6 +369,7 @@ index 1cfe408..654d657 100644
 +                        float W = get_weight(D, s->blend_width); \
 +                        \
 +                        if (W > 0) { \
++                             float priority_W = powf(W, 3.0f); \
 +                             int in_w = s->inplanewidth[plane]; \
 +                             int in_h = s->inplaneheight[plane]; \
 +                             float tx = (u_prime + 1.0f) * 0.5f * in_w - 0.5f; \
@@ -393,8 +394,8 @@ index 1cfe408..654d657 100644
 +                             float val11 = READ_PIXEL_##bits(in, plane, x1, y1); \
 +                             \
 +                             float val = val00 * wx0 * wy0 + val01 * wx1 * wy0 + val10 * wx0 * wy1 + val11 * wx1 * wy1; \
-+                             acc_val += val * W; \
-+                             acc_w += W; \
++                             acc_val += val * priority_W; \
++                             acc_w += priority_W; \
 +                        } \
 +                    } \
 +                } \
@@ -489,7 +490,7 @@ index 1cfe408..654d657 100644
  static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
                             char *res, int res_len, int flags)
  {
-@@ -4951,13 +5329,110 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
+@@ -4951,13 +5330,110 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
      return config_output(ctx->outputs[0]);
  }
  
@@ -600,7 +601,7 @@ index 1cfe408..654d657 100644
  }
  
  static av_cold void uninit(AVFilterContext *ctx)
-@@ -4977,15 +5452,15 @@ static av_cold void uninit(AVFilterContext *ctx)
+@@ -4977,15 +5453,15 @@ static av_cold void uninit(AVFilterContext *ctx)
      }
  
      av_freep(&s->slice_remap);
@@ -623,7 +624,7 @@ index 1cfe408..654d657 100644
  
  static const AVFilterPad outputs[] = {
      {
-@@ -4999,11 +5474,12 @@ const FFFilter ff_vf_v360 = {
+@@ -4999,11 +5475,12 @@ const FFFilter ff_vf_v360 = {
      .p.name        = "v360",
      .p.description = NULL_IF_CONFIG_SMALL("Convert 360 projection of video."),
      .p.priv_class  = &v360_class,
